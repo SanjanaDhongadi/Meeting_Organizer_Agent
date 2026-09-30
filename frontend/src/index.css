@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  color: #24323a;
+  background: #f3f6f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --surface: #ffffff;
+  --background: #f3f6f6;
+  --border: #dce4e5;
+  --text: #24323a;
+  --muted: #68777d;
+  --accent: #176b63;
+  --accent-soft: #e8f3f1;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: inherit;
+}
+
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+
+.glass-panel, .glass-panel-glow {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(26, 46, 50, .04) !important;
+}
+
+.bg-slate-950, .bg-slate-950\/90, .bg-slate-950\/80, .bg-slate-950\/60,
+.bg-slate-900, .bg-slate-900\/90, .bg-slate-900\/80, .bg-slate-900\/60,
+.bg-slate-800, .bg-slate-800\/80, .bg-slate-800\/60 {
+  background-color: #f7f9f9 !important;
+}
+.bg-indigo-950\/10, .bg-amber-950\/10 { background-color: #ffffff !important; }
+.border-slate-950, .border-slate-900, .border-slate-800, .border-slate-800\/80,
+.border-slate-700, .border-slate-700\/80 { border-color: var(--border) !important; }
+
+.text-white, .text-slate-100, .text-slate-200, .text-slate-300 { color: var(--text) !important; }
+.text-slate-400, .text-slate-500, .text-slate-600 { color: var(--muted) !important; }
+.text-indigo-300, .text-indigo-400, .text-blue-400 { color: var(--accent) !important; }
+.text-emerald-300, .text-emerald-400, .text-cyan-400 { color: #23734f !important; }
+.text-amber-200, .text-amber-300, .text-amber-400 { color: #946311 !important; }
+.text-rose-300, .text-rose-400 { color: #a23f43 !important; }
+
+.bg-indigo-500\/20, .bg-indigo-600\/20, .bg-indigo-600\/30,
+.bg-indigo-950\/10, .bg-blue-500\/20 { background-color: var(--accent-soft) !important; }
+.bg-indigo-600, .bg-indigo-500, .bg-gradient-to-r { background: var(--accent) !important; }
+.bg-amber-500, .bg-amber-500\/20, .bg-amber-500\/10 { background-color: #f7f0df !important; }
+.bg-emerald-600, .bg-emerald-500\/20, .bg-cyan-500\/20 { background-color: #e8f3ec !important; }
+.bg-rose-500\/20 { background-color: #f8ebeb !important; }
+.border-indigo-500\/30, .border-indigo-500\/20 { border-color: #b8d6d1 !important; }
+.border-amber-500\/30, .border-amber-500\/20 { border-color: #e7d9b7 !important; }
+.border-emerald-500\/30, .border-cyan-500\/30 { border-color: #c7dfd0 !important; }
+.border-rose-500\/30, .border-rose-500\/20 { border-color: #ebcccc !important; }
+
+button.bg-indigo-600.text-white,
+button.bg-emerald-600.text-white,
+button.bg-gradient-to-r.text-white { color: #ffffff !important; }
+
+.hover\:bg-slate-700:hover, .hover\:bg-slate-700\/30:hover { background-color: #edf2f2 !important; }
+.hover\:bg-indigo-500:hover, .hover\:bg-emerald-500:hover { background-color: #125950 !important; }
+
+input, select, textarea {
+  color: var(--text) !important;
+  background-color: #fff !important;
+  border-color: #cbd7d9 !important;
+}
+input::placeholder, textarea::placeholder { color: #89969a !important; }
+input:focus, select:focus, textarea:focus { outline: 2px solid #b9d9d3; outline-offset: 1px; }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-draft { color: #57666c; background: #edf1f1; }
+.status-waiting { color: #8a6418; background: #faf4e5; border-color: #e7d9b7; }
+.status-approved { color: #176b63; background: #e8f3f1; border-color: #b8d6d1; }
+.status-confirmed { color: #23734f; background: #e8f3ec; border-color: #c7dfd0; }
+.status-rejected { color: #a23f43; background: #f8ebeb; border-color: #ebcccc; }
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: #eef2f2; }
+::-webkit-scrollbar-thumb { background: #c4d0d2; border-radius: 4px; }
+
+@media (max-width: 640px) {
+  .mobile-stack { align-items: stretch; flex-direction: column; }
+}
