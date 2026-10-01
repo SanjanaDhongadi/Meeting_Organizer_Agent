@@ -23,6 +23,8 @@ export default function HumanApprovalModal({ meeting, onClose, onApprove, onReje
   if (!meeting) return null;
 
   const isOnline = meeting.mode === 'ONLINE';
+  // The backend only accepts APPROVE while the plan waits at the approval gate.
+  const canApprove = meeting.status === 'WAITING_FOR_HUMAN_APPROVAL';
   const conflicts = meeting.conflicts || [];
   const validation = meeting.validation || meeting.parsed_details?.validation || {};
   const warnings = validation.warnings || [];
@@ -156,7 +158,10 @@ export default function HumanApprovalModal({ meeting, onClose, onApprove, onReje
                       <div className="font-medium text-slate-200">{p.name}</div>
                       <div className="text-slate-500 font-mono text-[11px]">{p.email}</div>
                     </div>
-                    <span className="text-slate-500">{p.calendar_status || (p.is_external ? 'UNVERIFIED' : 'Availability not verified')}</span>
+                    <span className="text-slate-500">
+                      {p.calendar_status || (p.is_external ? 'UNVERIFIED' : 'Availability not verified')}
+                      {p.response_status && p.response_status !== 'PENDING' ? ` · ${p.response_status}` : ''}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -309,7 +314,9 @@ export default function HumanApprovalModal({ meeting, onClose, onApprove, onReje
 
             <button
               onClick={handleApprove}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/30"
+              disabled={!canApprove || isEditing}
+              title={canApprove ? 'Creates the calendar event / sends invitations or the room request' : 'Save edits first: the plan must be re-validated before approval'}
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all shadow-lg shadow-emerald-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Approve and send</span>

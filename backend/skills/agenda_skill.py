@@ -64,6 +64,9 @@ class AgendaPreparationSkill(BaseSkill):
         duration = inputs.get("duration_minutes", 30)
         participants = inputs.get("participants", [])
         allow_skip = inputs.get("allow_skip", False)
+        # Long-term memory (RAG) context: related past meetings retrieved for this request.
+        related_meetings = inputs.get("related_meetings") or []
+        related_titles = [m.get("title") for m in related_meetings if m.get("title")]
 
         if allow_skip:
             return {
@@ -90,7 +93,14 @@ class AgendaPreparationSkill(BaseSkill):
                     f"Create a concise, structured markdown agenda for a {duration}-minute meeting.\n"
                     f"Purpose: '{purpose}'\n"
                     f"Participants: {', '.join(participants) if participants else 'Team members'}\n"
-                    f"Include numbered sections with minute allocations."
+                    + (
+                        "Related past meetings retrieved from organizational memory (use them for follow-up items, "
+                        "do not invent details beyond them): "
+                        + "; ".join(f"{m.get('title')} — purpose: {m.get('purpose')}" for m in related_meetings)
+                        + "\n"
+                        if related_meetings else ""
+                    )
+                    + "Include numbered sections with minute allocations."
                 )
                 res = client.chat.completions.create(
                     model=settings.OPENAI_MODEL,
@@ -121,6 +131,7 @@ class AgendaPreparationSkill(BaseSkill):
             f"2. **({d_intro:02d} - {(d_intro+d_main):02d}m) Deep-Dive Discussion**",
             f"   - Core review, findings, and technical roadblocks",
             f"   - Input from key participants: {', '.join(participants) if participants else 'Attendees'}",
+            *( [f"   - Follow-up on related past meeting(s): {', '.join(related_titles)}"] if related_titles else [] ),
             f"3. **({(d_intro+d_main):02d} - {duration:02d}m) Action Items & Next Steps**",
             f"   - Owner assignments and target deliverables"
         ]

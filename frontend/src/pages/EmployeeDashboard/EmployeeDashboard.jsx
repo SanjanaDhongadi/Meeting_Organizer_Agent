@@ -28,36 +28,53 @@ export default function EmployeeDashboard() {
   });
   const [saveMessage, setSaveMessage] = useState('');
 
+  const [errorMessage, setErrorMessage] = useState('');
+
   const loadEmployees = async () => {
     try {
       const data = await api.getEmployees();
       setEmployees(data);
       setSearchMode(false);
     } catch (e) {
-      console.error(e);
+      setErrorMessage(`Could not load employees from the backend: ${e.message}`);
     }
   };
 
   useEffect(() => {
-    loadEmployees();
-
     const params = new URLSearchParams(window.location.search);
     const calendarStatus = params.get('calendar');
     const email = params.get('email');
-
-    if (calendarStatus === 'connected') {
-      setSaveMessage(email ? `✓ Google Calendar connected successfully for ${email}.` : '✓ Google Calendar connected successfully.');
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (calendarStatus === 'denied') {
-      alert('Google Calendar connection was denied.');
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (calendarStatus === 'unregistered_email') {
-      alert(`Google authorization succeeded for ${email || 'account'}, but this email does not match any registered employee. Please register this employee first.`);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (calendarStatus === 'error') {
-      alert('Google Calendar connection encountered an error.');
-      window.history.replaceState({}, document.title, window.location.pathname);
+    const reason = params.get('reason');
+    const googleEmail = params.get('google_email');
+    if (calendarStatus) {
+      window.history.replaceState({}, document.title, `${window.location.pathname}#employees`);
     }
+
+    const handleOAuthReturn = async () => {
+      if (calendarStatus === 'connected' && email) {
+        // Confirm with the backend (token loaded/refreshed) rather than trusting the redirect.
+        try {
+          const status = await api.getCalendarStatusByEmail(email, true);
+          if (status.google_calendar_connected) {
+            setSaveMessage(`✓ Google account connected for ${email}.`);
+          } else {
+            setErrorMessage(`Google authorization finished, but the stored connection for ${email} is not usable: ${status.error?.error || 'the backend reports this account as not connected'}`);
+          }
+        } catch (e) {
+          setErrorMessage(`Could not verify the Google connection for ${email}: ${e.message}`);
+        }
+      } else if (calendarStatus === 'denied') {
+        setErrorMessage(`Google access was denied${email ? ` for ${email}` : ''}${reason ? ` (${reason})` : ''}.`);
+      } else if (calendarStatus === 'account_mismatch') {
+        setErrorMessage(reason || `Signed in as ${googleEmail}, which is not the registered email ${email}. Nothing was connected.`);
+      } else if (calendarStatus === 'unregistered_email') {
+        setErrorMessage(`Google authorization succeeded for ${email || 'this account'}, but it does not match a registered employee.`);
+      } else if (calendarStatus === 'error') {
+        setErrorMessage(`Google connection failed${email ? ` for ${email}` : ''}: ${reason || 'unknown error'}`);
+      }
+      await loadEmployees();
+    };
+    handleOAuthReturn();
   }, []);
 
   const handleSearch = async (e) => {
@@ -71,7 +88,7 @@ export default function EmployeeDashboard() {
       setEmployees(results.map(r => r.employee));
       setSearchMode(true);
     } catch (e) {
-      console.error(e);
+      setErrorMessage(e.message);
     }
   };
 
@@ -101,7 +118,7 @@ export default function EmployeeDashboard() {
         other_info: ''
       });
     } catch (err) {
-      alert(err.message);
+      setErrorMessage(err.message);
     } finally {
       setLoading(false);
     }
@@ -112,7 +129,7 @@ export default function EmployeeDashboard() {
       await api.disconnectCalendar(id);
       loadEmployees();
     } catch (e) {
-      console.error(e);
+      setErrorMessage(e.message);
     }
   };
 
@@ -122,7 +139,7 @@ export default function EmployeeDashboard() {
         await api.deleteEmployee(id);
         loadEmployees();
       } catch (e) {
-        console.error(e);
+        setErrorMessage(e.message);
       }
     }
   };
@@ -133,8 +150,8 @@ export default function EmployeeDashboard() {
       {/* Top Banner */}
       <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Employee Dashboard</h1>
-          <p className="text-sm text-slate-400 mt-1">Profiles, availability, preferences, and calendar connections.</p>
+          <h1 className="text-2xl font-bold text-white">Employees</h1>
+          <p className="text-sm text-slate-400 mt-1">Profiles, working hours, preferences, and Google (Calendar, Meet, Gmail) connections. The email address is each employee's identity.</p>
         </div>
 
         <button
@@ -146,6 +163,12 @@ export default function EmployeeDashboard() {
         </button>
       </div>
       {saveMessage && <p role="status" className="text-sm text-emerald-700">{saveMessage}</p>}
+      {errorMessage && (
+        <div role="alert" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-3 flex justify-between gap-3">
+          <span>{errorMessage}</span>
+          <button type="button" onClick={() => setErrorMessage('')} className="text-rose-500">✕</button>
+        </div>
+      )}
 
       {/* Semantic Search Bar */}
       <div className="glass-panel p-4 rounded-xl border border-slate-800">
@@ -413,9 +436,10 @@ export default function EmployeeDashboard() {
                 ) : (
                   <a
                     href={`/api/employees/${emp.id}/calendar/connect`}
+                    title={`Sign in with ${emp.email}`}
                     className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-indigo-500/30 bg-indigo-600/20 text-indigo-400"
                   >
-                    Connect calendar
+                    Connect Google
                   </a>
                 )}
               </div>

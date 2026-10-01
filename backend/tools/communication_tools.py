@@ -12,6 +12,7 @@ class SendEmailInput(BaseModel):
     subject: str = Field(..., description="Subject line of the email")
     body: str = Field(..., description="Content body of the email invitation")
     meeting_id: str = Field("unknown", description="ID of the associated meeting")
+    sender_email: Optional[str] = Field(None, description="Connected Google account used to send")
 
 class SendEmailTool(BaseTool):
     name: str = "send_email"
@@ -30,6 +31,7 @@ class SendEmailTool(BaseTool):
             "subject": args.subject,
             "body": args.body,
             "meeting_id": args.meeting_id,
+            "sender_email": args.sender_email,
         })
         return ToolResult(
             success=res.get("success", False),

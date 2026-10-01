@@ -4,9 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --mode employee --port 5173 --strictPort",
-    "dev:employee": "vite --mode employee --port 5173 --strictPort",
-    "dev:meeting": "vite --mode meeting --port 5174 --strictPort",
+    "dev": "vite --port 5173 --strictPort",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

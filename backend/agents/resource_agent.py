@@ -38,12 +38,15 @@ class ResourceAgent(BaseAgent):
         req_room = state.get("room_name") or ""
         equipment = state.get("equipment") or ""
 
-        if not req_room:
-            # Pick based on capacity and purpose
-            if "keynote" in purpose.lower() or "all-hands" in purpose.lower() or num_attendees > 20:
-                req_room = "Auditorium Alpha"
+        if not req_room and SEED_ROOMS:
+            # Pick from the configured catalog based on capacity and purpose
+            large_event = "keynote" in purpose.lower() or "all-hands" in purpose.lower() or num_attendees > 20
+            if large_event:
+                req_room = max(SEED_ROOMS, key=lambda r: r.get("capacity", 0))["name"]
             else:
-                req_room = "Conference Room B (Innovation Lab)"
+                fitting = sorted((r for r in SEED_ROOMS if r.get("capacity", 0) >= num_attendees and not r.get("requires_approval")),
+                                 key=lambda r: r.get("capacity", 0))
+                req_room = (fitting[0] if fitting else max(SEED_ROOMS, key=lambda r: r.get("capacity", 0)))["name"]
         room_data = next(
             (room for room in SEED_ROOMS if room["name"].lower() == req_room.lower()),
             None,

@@ -170,6 +170,8 @@ def test_13_human_approves():
     )
     # Approve via meeting job
     meeting = background_worker.state_manager.load_meeting(m_id)
+    # The approval gate requires a recorded human approval, not just a status change.
+    tool_registry.get("save_meeting_state").execute(meeting_id=m_id, approval_status="APPROVED")
     background_worker.state_manager.update_meeting_status(m_id, "APPROVED", "HUMAN_APPROVE")
     exec_res = background_worker.meeting_job.execute(m_id)
     assert exec_res["success"] is True

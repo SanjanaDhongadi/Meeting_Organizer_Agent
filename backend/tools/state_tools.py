@@ -12,6 +12,7 @@ logger = logging.getLogger("state_tools")
 class SaveMeetingStateInput(BaseModel):
     meeting_id: str = Field(..., description="Unique meeting ID")
     title: Optional[str] = Field(None, description="Meeting title")
+    raw_request: Optional[str] = Field(None, description="Original natural-language request")
     status: Optional[str] = Field(None, description="Current workflow state")
     mode: Optional[str] = Field(None, description="ONLINE or OFFLINE")
     scheduled_start: Optional[str] = Field(None, description="Scheduled start ISO string")
@@ -41,13 +42,15 @@ class SaveMeetingStateTool(BaseTool):
                 meeting = Meeting(
                     id=args.meeting_id,
                     title=args.title or "Untitled Meeting",
-                    raw_request="Internal Agent Request",
+                    raw_request=args.raw_request or "Internal Agent Request",
                     status=args.status or "DRAFT"
                 )
                 db.add(meeting)
 
             if args.title is not None:
                 meeting.title = args.title
+            if args.raw_request is not None:
+                meeting.raw_request = args.raw_request
             if args.status is not None:
                 meeting.status = args.status
             if args.mode is not None:

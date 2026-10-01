@@ -29,6 +29,7 @@ class SchedulingAgent(BaseAgent):
             "target_start_time": target_start,
             "target_end_time": target_end,
             "duration_minutes": duration,
+            # Profiles carry working days/hours/timezone from the directory and long-term memory (RAG).
             "profiles": state.get("resolved_participants", [])
         })
 
@@ -42,6 +43,8 @@ class SchedulingAgent(BaseAgent):
             status=status,
             data={
                 "is_slot_available": is_avail,
+                "requested_slot": skill_result.get("requested_slot"),
+                "requested_slot_busy": skill_result.get("requested_slot_busy", False),
                 "selected_slot": skill_result.get("selected_slot"),
                 "alternative_slots": skill_result.get("alternative_slots", []),
                 "participant_statuses": skill_result.get("participant_statuses", {}),

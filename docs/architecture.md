@@ -9,7 +9,7 @@ The **AI Meeting Organizer Agent** is an academic and enterprise-grade full-stac
 ```
                       +---------------------------------------+
                       |         REACT FRONTEND (VITE)         |
-                      |  Dashboard 1 (Emp) | Dashboard 2 (Mtg)|
+                      | Employees view | Meeting Organizer view|
                       +-------------------+-------------------+
                                           | HTTP / JSON-RPC
                                           v
@@ -53,12 +53,15 @@ The **AI Meeting Organizer Agent** is an academic and enterprise-grade full-stac
 
 ## 2. Core Subsystems
 
-### 2.1 Dashboards
-- **Dashboard 1 (Person / Employee Information)**:
+### 2.1 Unified frontend
+Both views live in ONE frontend application (http://localhost:5173) with in-app navigation; they share the same
+backend and database.
+
+- **Employees view (formerly Dashboard 1)**:
   - Captures Employee ID, Name, Email, Designation, Department, Working days/hours, Timezone, Preferences, Mode preference, and Office location.
   - Stored in PostgreSQL with pgvector embeddings for semantic context.
   - Google Calendar OAuth integration status.
-- **Dashboard 2 (Meeting Organizer)**:
+- **Meeting Organizer view (formerly Dashboard 2)**:
   - Natural-language scheduling prompt intake.
   - Interactive visualization of extracted slots, participants, and room assignments.
   - Live Conflict & Critique viewer showing multi-agent dispute resolution.
@@ -77,3 +80,24 @@ The **AI Meeting Organizer Agent** is an academic and enterprise-grade full-stac
 - Persistent state management across asynchronous cycles.
 - Handles deferred participant responses (accept/reject) and delayed facility room manager sign-offs.
 - Resumes the **exact same meeting workflow** without creating redundant entities.
+
+### 2.4 Live request path (LangGraph)
+
+The API's `/api/meetings/orchestrate` runs the LangGraph workflow in `backend/graph/workflow_graph.py`:
+
+```
+START ─► intake ─► parse ─► identify participants ─► retrieve RAG context ─┬─► ask for information ─► END (blocked draft)
+                                                                            └─► availability ─► (alternative slot) ─► agenda
+─► resource ─► validate + critique + conflicts ─► draft plan ─► HUMAN APPROVAL GATE ─► END (paused, WAITING_FOR_HUMAN_APPROVAL)
+
+APPROVE  ─► START ─► approval gate (checks the persisted approval) ─► execute ─► wait ─► END
+RESPONSE ─► START ─► process responses ─► revalidate ─► finalize ─► END          (same meeting id every time)
+EDIT / participant resolved ─► START ─► retrieve context ─► availability … ─► draft ─► gate ─► END
+```
+
+- State is persisted in the existing `meetings` / `meeting_participants` / `room_bookings` tables; the resumable
+  workflow snapshot lives in `meetings.parsed_details.workflow`.
+- Every external capability (availability, slot search, event creation + Meet, Gmail, room request, event read,
+  inbox read) goes through the MCP gateway. Consequential capabilities are only executed after human approval.
+- RAG context (related past meetings, participants' stored preferences/working hours) is placed in the graph state and
+  read by the Scheduling, Agenda and Coordinator (critique) agents.

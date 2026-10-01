@@ -24,7 +24,7 @@ export default function AsyncSimulator({ meeting, onStateChange }) {
         meeting.id || meeting.meeting_id,
         selectedParticipant,
         response,
-        `Simulated ${response.toLowerCase()} in demo mode`
+        `Simulated ${response.toLowerCase()} (not a real reply)`
       );
       if (onStateChange) onStateChange();
     } catch (e) {
@@ -60,12 +60,12 @@ export default function AsyncSimulator({ meeting, onStateChange }) {
             <FastForward className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="font-bold text-white text-sm">Demo response</h4>
-            <p className="text-xs text-slate-400">This meeting remains waiting until a response is submitted.</p>
+            <h4 className="font-bold text-white text-sm">Simulated response (testing only)</h4>
+            <p className="text-xs text-slate-400">Responses entered here are recorded as SIMULATED, not as real replies. Use “Check for responses” to read real Google Calendar / Gmail replies.</p>
           </div>
         </div>
         <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-indigo-300">
-          {waitingForRoom ? 'Waiting for auditorium response' : 'Waiting for participant response'}
+          {waitingForRoom ? 'Request sent · waiting for auditorium response' : 'Waiting for participant response'}
         </span>
       </div>
 

@@ -16,9 +16,15 @@ class LongTermMemory:
     NOTE: Never determines calendar availability using RAG.
     """
 
-    def search_context(self, query: str, top_k: int = 3) -> Dict[str, Any]:
+    # Meetings that actually happened / were finalized count as history. The workflow finalizes meetings as
+    # CONFIRMED (BOOKED is the older name); COMPLETED is kept for records marked as concluded.
+    HISTORY_STATUSES = ("COMPLETED", "CONFIRMED", "BOOKED")
+
+    def search_context(self, query: str, top_k: int = 3, exclude_meeting_id: Optional[str] = None,
+                       participant_emails: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         RAG semantic search across employee preferences, roles, and past meetings.
+        When participant emails are known, their stored preferences are returned too so agents can use them.
         """
         db = SessionLocal()
         try:
@@ -56,29 +62,55 @@ class LongTermMemory:
             ]
 
             # 2. Search past meetings
-            past_meetings = db.query(Meeting).filter(Meeting.status == "COMPLETED").all()
+            past_query = db.query(Meeting).filter(Meeting.status.in_(self.HISTORY_STATUSES))
+            if exclude_meeting_id:
+                past_query = past_query.filter(Meeting.id != exclude_meeting_id)
+            past_meetings = past_query.all()
             matched_meetings = []
+            q_terms = self._keywords(query)
             for m in past_meetings:
                 m_text = f"{m.title} {m.purpose} {m.agenda}"
                 m_vec = compute_simple_embedding(m_text)
                 score = cosine_similarity(q_vec, m_vec)
+                # Hybrid lexical boost (same idea as for employees): shared topic words, not generic ones.
+                score += 0.15 * len(q_terms & self._keywords(f"{m.title} {m.purpose}"))
                 if score > 0.35:
                     matched_meetings.append({
                         "similarity": round(score, 3),
                         "meeting_id": m.id,
                         "title": m.title,
                         "purpose": m.purpose,
-                        "agenda": m.agenda
+                        "agenda": m.agenda,
+                        "status": m.status,
+                        "scheduled_start": m.scheduled_start,
                     })
             matched_meetings.sort(key=lambda x: x["similarity"], reverse=True)
+
+            participant_preferences = {}
+            for email in participant_emails or []:
+                prefs = self.get_employee_preferences(email)
+                if prefs:
+                    participant_preferences[email.lower()] = prefs
 
             return {
                 "query": query,
                 "relevant_employees": matched_employees,
-                "historical_meetings": matched_meetings[:top_k]
+                "historical_meetings": matched_meetings[:top_k],
+                "participant_preferences": participant_preferences,
             }
         finally:
             db.close()
+
+    STOPWORDS = {
+        "meeting", "meetings", "schedule", "discuss", "discussion", "review", "with", "from", "about", "online",
+        "offline", "purpose", "should", "the", "and", "for", "this", "that", "next", "sync", "project", "team",
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "want", "please",
+    }
+
+    @classmethod
+    def _keywords(cls, text: str) -> set:
+        import re
+        return {w for w in re.findall(r"[a-z0-9]+", (text or "").lower()) if len(w) > 3 and w not in cls.STOPWORDS}
 
     def get_employee_preferences(self, email: str) -> Optional[Dict[str, Any]]:
         db = SessionLocal()

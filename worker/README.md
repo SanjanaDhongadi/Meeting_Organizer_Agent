@@ -31,17 +31,30 @@ worker/
 └── README.md
 ```
 
+## How it connects
+
+- `MeetingJob` executes APPROVED meetings by resuming the LangGraph workflow at the approval gate
+  (an atomic `APPROVED → EXECUTING` claim prevents double execution between the API and this worker).
+- `ResponseProcessingJob` records a response on the existing meeting and resumes the same workflow
+  (process responses → revalidate → finalize).
+- Each cycle also reads **real** responses through MCP: attendee status from the Google Calendar event
+  (`calendar.get_event`) and auditorium replies from Gmail (`gmail.read`). Simulated responses from the UI are
+  stored with source `SIMULATED`; real ones with `GOOGLE_CALENDAR` / `GMAIL_REPLY`.
+
 ## Supported Workflow States
 
 - `DRAFT`: Initial extracted proposal
 - `WAITING_FOR_HUMAN_APPROVAL`: Proposal ready for human gate
 - `APPROVED`: Human approved, awaiting background processing
+- `EXECUTING`: Approved actions are being executed (claimed by one process)
+- `ACTION_FAILED`: An approved external action failed; the real error is stored on the meeting
 - `CHECKING_AVAILABILITY`: Real-time calendar verification
 - `WAITING_FOR_PARTICIPANTS`: Waiting for external attendees to accept
 - `WAITING_FOR_AUDITORIUM_RESPONSE`: Waiting for an auditorium booking response
 - `READY_TO_FINALIZE`: All prerequisites verified
 - `RESCHEDULING_REQUIRED`: Conflict, rejection, or room unavailability encountered
-- `BOOKED`: Meeting officially scheduled with event ID and Meet/Room link
+- `CONFIRMED`: Meeting finalized (all participants accepted / room confirmed)
+- `BOOKED`: Legacy name for a finalized meeting
 - `COMPLETED`: Meeting concluded
 - `REJECTED`: Explicitly rejected by human gate
 - `FAILED`: Fatal execution error

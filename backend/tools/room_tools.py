@@ -14,6 +14,10 @@ class RequestRoomBookingInput(BaseModel):
     capacity: int = Field(10, description="Minimum seating capacity required")
     equipment: str = Field("", description="Special equipment required (e.g. Projector, Mic, Livestream Rig)")
     meeting_id: str = Field(..., description="ID of the meeting requiring the room")
+    duration_minutes: Optional[int] = Field(None, description="Meeting duration in minutes")
+    participant_count: Optional[int] = Field(None, description="Number of participants")
+    purpose: str = Field("", description="Meeting purpose")
+    sender_email: Optional[str] = Field(None, description="Connected Google account used to send the request")
 
 class RequestRoomBookingTool(BaseTool):
     name: str = "request_room_booking"
@@ -28,6 +32,10 @@ class RequestRoomBookingTool(BaseTool):
             "capacity": args.capacity,
             "equipment": args.equipment,
             "meeting_id": args.meeting_id,
+            "duration_minutes": args.duration_minutes,
+            "participant_count": args.participant_count,
+            "purpose": args.purpose,
+            "sender_email": args.sender_email,
         })
         success = res.get("success", True) and res.get("status") not in {"FAILED"}
         return ToolResult(

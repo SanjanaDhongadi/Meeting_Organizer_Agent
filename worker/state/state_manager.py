@@ -18,10 +18,29 @@ class StateManager:
         self._processed_events = set()
 
     def is_event_processed(self, event_id: str) -> bool:
-        return event_id in self._processed_events
+        if event_id in self._processed_events:
+            return True
+        # Idempotency is persisted so the API process and the worker process share it.
+        db = SessionLocal()
+        try:
+            return db.query(AuditLog).filter(
+                AuditLog.action == "EVENT_PROCESSED", AuditLog.tool == event_id
+            ).first() is not None
+        finally:
+            db.close()
 
-    def mark_event_processed(self, event_id: str):
+    def mark_event_processed(self, event_id: str, meeting_id: Optional[str] = None, source: str = ""):
         self._processed_events.add(event_id)
+        db = SessionLocal()
+        try:
+            db.add(AuditLog(meeting_id=meeting_id, agent="Worker StateManager", action="EVENT_PROCESSED",
+                            tool=event_id, status="SUCCESS", details=json.dumps({"source": source})))
+            db.commit()
+        except Exception as e:
+            logger.error(f"Failed to persist processed event {event_id}: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
     def load_meeting(self, meeting_id: str) -> Optional[Dict[str, Any]]:
         db = SessionLocal()
@@ -71,6 +90,33 @@ class StateManager:
         finally:
             db.close()
 
+    def claim_status(self, meeting_id: str, from_status: str, to_status: str) -> bool:
+        """Atomically move a meeting from one status to another; only one caller can win the claim."""
+        db = SessionLocal()
+        try:
+            updated = db.query(Meeting).filter(
+                Meeting.id == meeting_id, Meeting.status == from_status
+            ).update({Meeting.status: to_status}, synchronize_session=False)
+            db.commit()
+            return updated == 1
+        except Exception as e:
+            logger.error(f"Failed to claim meeting {meeting_id} ({from_status} -> {to_status}): {e}")
+            db.rollback()
+            return False
+        finally:
+            db.close()
+
+    def reset_participant_responses(self, meeting_id: str) -> None:
+        db = SessionLocal()
+        try:
+            for p in db.query(MeetingParticipant).filter(MeetingParticipant.meeting_id == meeting_id).all():
+                p.response_status = "PENDING"
+                p.response_time = None
+                p.notes = ""
+            db.commit()
+        finally:
+            db.close()
+
     def update_participant_response(self, meeting_id: str, email: str, response_status: str, notes: str = "") -> bool:
         db = SessionLocal()
         try:
@@ -95,7 +141,8 @@ class StateManager:
         finally:
             db.close()
 
-    def update_room_response(self, meeting_id: str, room_name: str, status: str, notes: str = "") -> bool:
+    def update_room_response(self, meeting_id: str, room_name: str, status: str, notes: str = "",
+                             capacity: Optional[int] = None, equipment: Optional[str] = None) -> bool:
         db = SessionLocal()
         try:
             rb = db.query(RoomBooking).filter(
@@ -105,7 +152,8 @@ class StateManager:
             if rb:
                 rb.status = status
                 rb.response_time = datetime.utcnow().isoformat()
-                rb.notes = notes
+                # Keep the history (including the request reference) instead of overwriting it.
+                rb.notes = f"{rb.notes}\n{notes}".strip() if rb.notes and notes else (notes or rb.notes)
             else:
                 rb = RoomBooking(
                     meeting_id=meeting_id,
@@ -115,6 +163,10 @@ class StateManager:
                     notes=notes
                 )
                 db.add(rb)
+            if capacity is not None:
+                rb.capacity = capacity
+            if equipment is not None:
+                rb.equipment_requirements = equipment
             db.commit()
             logger.info(f"[StateManager] Room {room_name} for meeting {meeting_id} set to {status}")
             return True

@@ -3,16 +3,14 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => ({
-  define: {
-    'import.meta.env.VITE_DASHBOARD': JSON.stringify(mode === 'meeting' ? 'meetings' : 'employees'),
-  },
+// One unified frontend (Employees + Meeting Organizer views) on a single port.
+export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
   ],
   server: {
-    port: mode === 'meeting' ? 5174 : 5173,
+    port: 5173,
     strictPort: true,
     proxy: {
       '/api': {
@@ -21,4 +19,4 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-}))
+})

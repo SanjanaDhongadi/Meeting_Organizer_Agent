@@ -24,7 +24,9 @@ class AgendaAgent(BaseAgent):
             "purpose": purpose,
             "duration_minutes": duration,
             "participants": participants,
-            "allow_skip": allow_skip
+            "allow_skip": allow_skip,
+            # RAG context placed in agent state by the workflow's retrieve-context step.
+            "related_meetings": (state.get("rag_context") or {}).get("historical_meetings", []),
         })
 
         has_purpose = skill_res.get("has_purpose", False)
@@ -51,6 +53,7 @@ class AgendaAgent(BaseAgent):
             data={
                 "agenda": agenda_text,
                 "has_purpose": has_purpose,
-                "is_editable": True
+                "is_editable": True,
+                "rag_meetings_used": [m.get("meeting_id") for m in (state.get("rag_context") or {}).get("historical_meetings", [])],
             }
         )

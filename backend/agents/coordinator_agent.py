@@ -51,9 +51,85 @@ class MeetingCoordinator(BaseAgent):
                     messages=[{"role": "user", "content": prompt}],
                     response_format={"type": "json_object"}
                 )
-                return json.loads(res.choices[0].message.content)
+                llm = json.loads(res.choices[0].message.content)
+                return self._normalize_llm_parse(llm, self._regex_parse(text))
             except Exception as e:
                 logger.warning(f"OpenAI extraction failed ({e}), using regex parser.")
+
+        return self._regex_parse(text)
+
+    def _normalize_llm_parse(self, llm: Dict[str, Any], fallback: Dict[str, Any]) -> Dict[str, Any]:
+        """The LLM returns HH:MM times and dates like 'Friday'; downstream agents need ISO-8601 UTC datetimes."""
+        parsed = dict(fallback)
+        date_value = str(llm.get("date") or "").strip()
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_value):
+            parsed["date"] = date_value
+        elif date_value:
+            today = datetime.now(timezone.utc)
+            names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+            if date_value.lower() in names:
+                diff = (names.index(date_value.lower()) - today.weekday()) % 7 or 7
+                parsed["date"] = (today + timedelta(days=diff)).strftime("%Y-%m-%d")
+
+        def to_iso(value: Any) -> Optional[str]:
+            value = str(value or "").strip()
+            if re.fullmatch(r"\d{1,2}:\d{2}", value):
+                h, m = value.split(":")
+                return self._to_utc_iso(parsed["date"], int(h), int(m))
+            if "T" in value:
+                return value if value.endswith("Z") or "+" in value else value + "Z"
+            return None
+
+        start_iso = to_iso(llm.get("start_time")) or fallback["start_time"]
+        duration = int(llm.get("duration_minutes") or 0) or None
+        end_iso = to_iso(llm.get("end_time"))
+        if not end_iso:
+            minutes = duration or fallback.get("duration_minutes", 30)
+            end_iso = (datetime.fromisoformat(start_iso.replace("Z", "+00:00")) + timedelta(minutes=minutes)).isoformat().replace("+00:00", "Z")
+        if not duration:
+            duration = max(15, int((datetime.fromisoformat(end_iso.replace("Z", "+00:00")) - datetime.fromisoformat(start_iso.replace("Z", "+00:00"))).total_seconds() // 60))
+        participants = llm.get("participants")
+        parsed.update({
+            "participants": [str(p).strip() for p in participants if str(p).strip()] if isinstance(participants, list) else fallback["participants"],
+            "start_time": start_iso,
+            "end_time": end_iso,
+            "duration_minutes": duration,
+            "mode": "OFFLINE" if str(llm.get("mode", "")).upper() == "OFFLINE" else ("ONLINE" if llm.get("mode") else fallback["mode"]),
+            "purpose": (llm.get("purpose") or fallback["purpose"] or "").strip(),
+            "room_name": (llm.get("room_name") or fallback["room_name"] or "").strip(),
+            "equipment": (llm.get("equipment") or fallback["equipment"] or "").strip(),
+            "parser": "openai",
+        })
+        return parsed
+
+    @staticmethod
+    def _to_utc_iso(date_str: str, hour: int, minute: int) -> str:
+        """Times in a request are wall-clock times in MEETING_TIMEZONE; the workflow stores UTC."""
+        from zoneinfo import ZoneInfo
+        try:
+            tz = ZoneInfo(settings.MEETING_TIMEZONE)
+        except Exception:
+            tz = timezone.utc
+        local = datetime.fromisoformat(f"{date_str}T00:00:00").replace(tzinfo=tz) + timedelta(hours=hour, minutes=minute)
+        return local.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    @staticmethod
+    def _match_room(text_lower: str) -> str:
+        """Match a room from the configured catalog (full name, base name, or the alias in parentheses)."""
+        from database.seed.seed_data import SEED_ROOMS
+        for room in SEED_ROOMS:
+            name = room["name"].lower()
+            base = name.split(" (")[0]
+            alias = name[name.find("(") + 1:name.find(")")] if "(" in name and ")" in name else ""
+            if name in text_lower or base in text_lower or (alias and alias in text_lower):
+                return room["name"]
+        if "auditorium" in text_lower:
+            auditoriums = [r for r in SEED_ROOMS if "auditorium" in r["name"].lower()]
+            if auditoriums:
+                return max(auditoriums, key=lambda r: r.get("capacity", 0))["name"]
+        return ""
+
+    def _regex_parse(self, text: str) -> Dict[str, Any]:
 
         text_lower = text.lower()
 
@@ -66,7 +142,7 @@ class MeetingCoordinator(BaseAgent):
 
         # 2. Participants extraction
         participants = []
-        with_match = re.search(r"with\s+([A-Za-z0-9@\.\,\s]+?)(?=\s+(on|at|from|to|for|in|this|next|it\s+should)|$)", text, re.IGNORECASE)
+        with_match = re.search(r"with\s+([A-Za-z0-9@\.\,\s_+\-]+?)(?=\s+(on|at|from|to|for|in|this|next|it\s+should)|$)", text, re.IGNORECASE)
         if with_match:
             raw_p = with_match.group(1)
             parts = re.split(r",|\band\b|&", raw_p)
@@ -126,8 +202,8 @@ class MeetingCoordinator(BaseAgent):
                 e_hour = 0
 
             duration = max(15, (e_hour * 60 + e_min) - (s_hour * 60 + s_min))
-            start_iso = f"{date_str}T{s_hour:02d}:{s_min:02d}:00Z"
-            end_iso = f"{date_str}T{e_hour:02d}:{e_min:02d}:00Z"
+            start_iso = self._to_utc_iso(date_str, s_hour, s_min)
+            end_iso = self._to_utc_iso(date_str, e_hour, e_min)
         else:
             single_match = re.search(r"(?:at\s+)(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", text_lower)
             if single_match:
@@ -137,18 +213,14 @@ class MeetingCoordinator(BaseAgent):
                 if ampm == "pm" and s_hour < 12:
                     s_hour += 12
                 duration = 30
-                start_iso = f"{date_str}T{s_hour:02d}:{s_min:02d}:00Z"
-                end_iso = f"{date_str}T{(s_hour + 1):02d}:{s_min:02d}:00Z"
+                start_iso = self._to_utc_iso(date_str, s_hour, s_min)
+                end_iso = self._to_utc_iso(date_str, s_hour, s_min + duration)
             else:
                 duration = 30
-                start_iso = f"{date_str}T15:00:00Z"
-                end_iso = f"{date_str}T15:30:00Z"
+                start_iso = self._to_utc_iso(date_str, 15, 0)
+                end_iso = self._to_utc_iso(date_str, 15, 30)
 
-        room_name = ""
-        if "auditorium" in text_lower:
-            room_name = "Auditorium Alpha"
-        elif "conference room b" in text_lower or "innovation lab" in text_lower:
-            room_name = "Conference Room B (Innovation Lab)"
+        room_name = self._match_room(text_lower)
 
         equipment = ""
         equipment_match = re.search(
@@ -222,12 +294,23 @@ class MeetingCoordinator(BaseAgent):
         }
         return merged
 
+    @staticmethod
+    def _blocked_weekdays(preferences: str) -> List[str]:
+        prefs = (preferences or "").lower()
+        days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        return [
+            d for d in days
+            if re.search(rf"\bno\s+(?:meetings?\s+(?:on\s+)?)?{d}s?\b|\bno\s+{d}s?\s+meetings?\b|\bnot\s+(?:available\s+)?on\s+{d}s?\b", prefs)
+        ]
+
     def critique(self, merged: Dict[str, Any], base_state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Lab 8 Critique: Evaluates combined state for logical, environmental, or constraint discrepancies.
+        Participant preferences come from long-term memory (RAG context) when the workflow retrieved them.
         """
         critique_notes = []
         is_consistent = True
+        rag_prefs = ((base_state.get("rag_context") or {}).get("participant_preferences") or {})
 
         slot = merged.get("scheduling_slot") or {}
         start_str = slot.get("start") or base_state.get("target_start_time") or ""
@@ -240,13 +323,27 @@ class MeetingCoordinator(BaseAgent):
             except Exception:
                 day_name = "friday"
 
+        hour = None
+        if start_str:
+            try:
+                hour = datetime.fromisoformat(start_str.replace("Z", "+00:00")).hour
+            except Exception:
+                hour = None
         for p in merged.get("participants", []):
-            prefs = (p.get("preferences") or "").lower()
-            if "no meetings on friday" in prefs and ("friday" in start_str.lower() or day_name == "friday"):
-                critique_notes.append(f"Participant {p['name']} has strict policy against Friday meetings.")
+            memory = rag_prefs.get((p.get("email") or "").lower()) or {}
+            prefs_text = memory.get("preferences") or p.get("preferences") or ""
+            source = "long-term memory" if memory else "directory profile"
+            prefs = prefs_text.lower()
+            blocked = self._blocked_weekdays(prefs)
+            if day_name and day_name in blocked:
+                critique_notes.append(
+                    f"Participant {p['name']} has a policy against {day_name.capitalize()} meetings ({source}: \"{prefs_text}\")."
+                )
                 is_consistent = False
-            if "morning" in prefs and "15:00" in start_str:
-                critique_notes.append(f"Participant {p['name']} prefers morning meetings, but afternoon slot proposed.")
+            if "morning" in prefs and hour is not None and hour >= 12:
+                critique_notes.append(f"Participant {p['name']} prefers morning meetings, but an afternoon slot is proposed ({source}).")
+            if "afternoon" in prefs and hour is not None and hour < 12:
+                critique_notes.append(f"Participant {p['name']} prefers afternoon meetings, but a morning slot is proposed ({source}).")
 
         mode = merged.get("mode", "ONLINE")
         if mode == "OFFLINE" and not merged.get("resource_info", {}).get("room_name"):
@@ -295,16 +392,30 @@ class MeetingCoordinator(BaseAgent):
         # 3. Direct Scheduling Conflicts (Calendar / Working Hours)
         for sc in merged.get("scheduling_conflicts", []):
             is_warning = sc.get("severity") == "WARNING"
+            if sc.get("severity") == "RESOLVED":
+                conflicts.append({
+                    "conflict_id": f"conf-{uuid.uuid4().hex[:6]}",
+                    "conflict": sc.get("conflict", "Time slot conflict"),
+                    "source_agents": ["Scheduling & Availability Agent"],
+                    "conflicting_values": {"participant": sc.get("participant"), "field": sc.get("field")},
+                    "evidence": sc.get("conflict"),
+                    "resolution": sc.get("resolution", "Alternative slot proposed."),
+                    "status": "RESOLVED"
+                })
+                continue
+            if sc.get("field") in {"working_hours", "working_days"}:
+                resolution = "Outside declared working time; confirm with the participant or edit the slot before approving."
+            elif is_warning:
+                resolution = "Calendar access is unverified; review with the participant before confirming."
+            else:
+                resolution = "Find an alternative slot or reschedule to another day."
             conflicts.append({
                 "conflict_id": f"conf-{uuid.uuid4().hex[:6]}",
                 "conflict": sc.get("conflict", "Time slot conflict"),
                 "source_agents": ["Scheduling & Availability Agent"],
                 "conflicting_values": {"participant": sc.get("participant"), "field": sc.get("field")},
                 "evidence": sc.get("conflict"),
-                "resolution": (
-                    "Calendar access is unverified; review with the participant before confirming."
-                    if is_warning else "Find an alternative slot or reschedule to another day."
-                ),
+                "resolution": resolution,
                 "status": "FLAGGED_FOR_HUMAN" if is_warning else "UNRESOLVED_BLOCKER"
             })
 
@@ -316,7 +427,7 @@ class MeetingCoordinator(BaseAgent):
                 "source_agents": ["Scheduling Agent", "Resource/Room Agent"],
                 "conflicting_values": {
                     "scheduling": "Common participant calendar slot available",
-                    "resource": "Auditorium Alpha booking is PENDING facility review"
+                    "resource": f"{resource_data.get('room_name')} booking is PENDING facility review"
                 },
                 "evidence": f"Facility manager approval needed for {resource_data.get('room_name')}.",
                 "resolution": "Wait for the auditorium response after human organizer approval.",

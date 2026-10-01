@@ -12,10 +12,10 @@ class RoomBookingJob:
         status = res.get("status")
 
         if status == "CONFIRMED":
-            state_manager.update_room_response(meeting_id, res.get("room_name", "Auditorium Alpha"), "CONFIRMED")
+            state_manager.update_room_response(meeting_id, res.get("room_name", ""), "CONFIRMED")
             state_manager.update_meeting_status(meeting_id, "BOOKED", "ROOM_CONFIRMED", f"Room booking {booking_id} confirmed by facilities.")
         elif status == "REJECTED":
-            state_manager.update_room_response(meeting_id, res.get("room_name", "Auditorium Alpha"), "REJECTED")
+            state_manager.update_room_response(meeting_id, res.get("room_name", ""), "REJECTED")
             state_manager.update_meeting_status(meeting_id, "RESCHEDULING_REQUIRED", "ROOM_REJECTED", f"Room booking {booking_id} rejected by facilities.")
 
         return res

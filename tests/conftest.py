@@ -1,4 +1,10 @@
 import json
+import os
+
+# Tests are deterministic and offline: mock Google adapters + a separate test database, so test
+# employees/meetings never appear in the live application's database.
+os.environ["DEMO_MODE"] = "true"
+os.environ["DATABASE_URL"] = "sqlite:///" + os.path.join(os.path.dirname(os.path.abspath(__file__)), ".test_meeting_organizer.db")
 
 import pytest
 

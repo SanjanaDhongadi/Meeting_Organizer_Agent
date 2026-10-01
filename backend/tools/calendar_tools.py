@@ -49,11 +49,16 @@ class FindCommonSlotsTool(BaseTool):
     args_schema = FindCommonSlotsInput
 
     def _run(self, args: FindCommonSlotsInput) -> ToolResult:
-        cal = get_calendar_service()
-        slots = cal.find_common_slots(args.emails, args.date_str, args.duration_minutes)
+        res = mcp_call("calendar.find_common_slots", {
+            "emails": args.emails,
+            "date_str": args.date_str,
+            "duration_minutes": args.duration_minutes,
+        })
+        if not res.get("success"):
+            return ToolResult(success=False, error=res.get("error"), data=res, tool_name=self.name)
         return ToolResult(
             success=True,
-            data={"common_slots": slots, "count": len(slots)},
+            data={"common_slots": res.get("common_slots", []), "count": res.get("count", 0)},
             tool_name=self.name
         )
 
@@ -65,6 +70,10 @@ class CreateCalendarEventInput(BaseModel):
     attendees: List[str] = Field(..., description="List of attendee email addresses")
     description: str = Field("", description="Meeting description and agenda")
     is_online: bool = Field(True, description="Whether meeting is online (generates Meet link)")
+    organizer_email: Optional[str] = Field(None, description="Connected Google account that organizes the event")
+    location: str = Field("", description="Physical location for offline meetings")
+    event_id: Optional[str] = Field(None, description="Existing Google event ID to update instead of creating a new one")
+    meeting_id: Optional[str] = Field(None, description="ID of the approved meeting")
 
 class CreateCalendarEventTool(BaseTool):
     name: str = "create_calendar_event"
@@ -79,6 +88,10 @@ class CreateCalendarEventTool(BaseTool):
             "attendees": args.attendees,
             "description": args.description,
             "is_online": args.is_online,
+            "organizer_email": args.organizer_email,
+            "location": args.location,
+            "event_id": args.event_id,
+            "meeting_id": args.meeting_id,
         })
         return ToolResult(
             success=res.get("success", False),

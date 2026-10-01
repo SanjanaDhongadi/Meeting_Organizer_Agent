@@ -56,9 +56,10 @@ class AuditMemory:
     def get_meeting_traces(self, meeting_id: str) -> List[Dict[str, Any]]:
         db = SessionLocal()
         try:
+            # Only this meeting's trace; global (meeting-less) events such as employee creation are not part of it.
             logs = db.query(AuditLog).filter(
-                (AuditLog.meeting_id == meeting_id) | (AuditLog.meeting_id.is_(None))
-            ).order_by(AuditLog.timestamp.asc()).all()
+                AuditLog.meeting_id == meeting_id
+            ).order_by(AuditLog.timestamp.asc(), AuditLog.id.asc()).all()
             return [l.to_dict() for l in logs]
         finally:
             db.close()

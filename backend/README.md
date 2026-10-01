@@ -4,18 +4,24 @@ FastAPI and LangGraph backend for the MEETING ORGANIZER AGENT.
 
 ## Modules
 
-- `app/`: FastAPI application, configuration, SQLAlchemy database models, seed scripts.
-- `agents/`: Meeting Coordinator, Participant Agent, Scheduling Agent, Agenda Agent, Resource Agent, Validation Agent.
-- `skills/`: Reusable skills (Meeting Scheduling Skill, Agenda Preparation Skill, Validation Skill).
-- `tools/`: 12 typed tools with Pydantic input/output schemas.
-- `connectors/`: CalendarService, EmailService, RoomService adapters (Mock & Real Google/Gmail) and MCP Gateway.
-- `memory/`: Session memory, employee preference retrieval, and internal audit memory.
-- `graph/`: Explicit LangGraph workflow state machine with conditional routing.
-- `runtime/`: Reusable agent runtime loop.
+- `app/`: FastAPI application, configuration (`config.py`, all values from `.env`), SQLAlchemy models.
+- `graph/`: the LangGraph workflow used by the live API. New requests run intake → parse → participants →
+  RAG context → availability → (alternative slot) → agenda → resource → validate/critique → draft → approval gate.
+  Approval, edits and asynchronous responses resume the SAME persisted meeting at the gate / response step.
+- `agents/`: Meeting Coordinator, Participant, Scheduling, Agenda, Resource, Validation agents.
+- `skills/`: Meeting Scheduling, Agenda Preparation, Validation skills.
+- `tools/`: 12 typed tools; calendar, email and room tools call the MCP gateway.
+- `connectors/`: MCP gateway plus Google Calendar/Meet, Gmail, email-based auditorium adapters, and OAuth helpers.
+  Mock adapters exist for tests only (`DEMO_MODE=true`).
+- `memory/`: session, long-term (RAG) and audit memory.
+- `runtime/`: agent runtime; `run_meeting_request` runs the LangGraph workflow.
 
 ## Running Locally
 
 ```bash
-# Start backend server
+pip install -r backend/requirements.txt
+cp .env.example .env        # fill in Google OAuth client, SECRET_KEY, etc.
 uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m worker.worker     # optional: background execution + real response polling
+pytest                      # uses DEMO_MODE and a separate test database
 ```
