@@ -1,0 +1,44 @@
+# Core API framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Database ORM (+ PostgreSQL driver for DATABASE_URL=postgresql+psycopg://...)
+sqlalchemy>=2.0.0
+psycopg[binary]>=3.1
+
+# Settings / env management
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Security (OAuth state signing)
+itsdangerous>=2.2.0
+
+# Numerical / vector similarity (local RAG)
+numpy>=1.26.0
+
+# Agent workflow graph (imported by backend/graph/workflow_graph.py)
+langgraph>=0.2.0
+
+# IANA time zones for working-hours checks (Windows has no system tz database)
+tzdata>=2024.1
+
+# Google APIs (Calendar, Gmail, OAuth)
+google-auth>=2.29.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.130.0
+
+# Groq (LLM: request extraction, agenda, minutes; speech-to-text for recordings)
+groq>=0.30.0
+
+# Multipart form parsing (audio upload endpoint)
+python-multipart>=0.0.9
+
+# HTTP client
+httpx>=0.27.0
+
+# Database migrations (alembic/)
+alembic>=1.13.0
+
+# Tests
+pytest>=8.0.0

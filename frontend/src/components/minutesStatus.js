@@ -1,0 +1,17 @@
+export const MINUTES_STATUS = {
+  WAITING_FOR_MEETING_END: 'Waiting for the meeting to end',
+  WAITING_FOR_TRANSCRIPT: 'Waiting for transcript',
+  TRANSCRIPT_UNAVAILABLE: 'Transcript unavailable',
+  RECORDING_IN_PROGRESS: 'Recording in progress',
+  AUDIO_UPLOADED: 'Audio uploaded',
+  TRANSCRIBING: 'Transcription in progress',
+  TRANSCRIPTION_FAILED: 'Transcription failed',
+  TRANSCRIPT_RETRIEVED: 'Transcript retrieved',
+  GENERATING_MOM: 'Generating MoM',
+  MOM_FAILED: 'MoM generation failed',
+  AWAITING_ORGANIZER_APPROVAL: 'Awaiting organizer approval',
+  DISTRIBUTING: 'Sending the minutes',
+  APPROVED_SEND_FAILED: 'Approved, but sending failed',
+  APPROVED_AND_DISTRIBUTED: 'Approved and distributed',
+  NOT_APPLICABLE: 'Not applicable (online meetings only)',
+};
