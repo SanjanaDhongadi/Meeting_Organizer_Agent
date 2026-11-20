@@ -5,15 +5,15 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 
-from backend.runtime.agent_interface import BaseAgent, AgentOutput
-from backend.agents.participant_agent import ParticipantAgent, normalize_participant
-from backend.agents.scheduling_agent import SchedulingAgent
-from backend.agents.agenda_agent import AgendaAgent
-from backend.connectors import groq_client
-from backend.skills.agenda_skill import extract_agenda_points, normalize_agenda_points
-from backend.agents.resource_agent import ResourceAgent
-from backend.agents.validation_agent import ValidationAgent
-from backend.app.config import settings
+from runtime.agent_interface import BaseAgent, AgentOutput
+from agents.participant_agent import ParticipantAgent, normalize_participant
+from agents.scheduling_agent import SchedulingAgent
+from agents.agenda_agent import AgendaAgent
+from connectors import groq_client
+from skills.agenda_skill import extract_agenda_points, normalize_agenda_points
+from agents.resource_agent import ResourceAgent
+from agents.validation_agent import ValidationAgent
+from app.config import settings
 
 logger = logging.getLogger("coordinator_agent")
 

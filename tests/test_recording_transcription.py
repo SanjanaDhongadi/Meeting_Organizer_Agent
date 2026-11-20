@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from backend.app.config import settings
+from app.config import settings
 from backend.app.db import ActionItem, MeetingMinutes, RecordingSegment, SessionLocal
 from backend.connectors.transcription_service import TranscriptionService, format_lines, transcription_service
 # Reused fixtures/helpers from the transcript tests (same boundaries, same fakes).

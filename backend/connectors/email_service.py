@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 import logging
 import uuid
-from backend.app.config import settings
-from backend.connectors.google_auth import google_error_detail
+from app.config import settings
+from connectors.google_auth import google_error_detail
 
 logger = logging.getLogger("email_service")
 
@@ -60,7 +60,7 @@ class GmailService(EmailService):
         self.credentials = credentials
 
     def _credentials_for(self, email: Optional[str]):
-        from backend.connectors.google_auth import load_google_credentials_with_error, resolve_organizer_email
+        from connectors.google_auth import load_google_credentials_with_error, resolve_organizer_email
         if self.credentials:
             return self.credentials, None, email
         account = email or resolve_organizer_email()

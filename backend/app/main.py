@@ -6,7 +6,7 @@ import re
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
-from backend.app.config import settings
+from app.config import settings
 
 # Plain-HTTP OAuth redirects are only allowed for local development redirect URIs.
 if settings.GOOGLE_REDIRECT_URI.startswith("http://localhost") or settings.GOOGLE_REDIRECT_URI.startswith("http://127.0.0.1"):
@@ -25,26 +25,26 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
-from backend.app.db import (
+from app.db import (
     get_db, User, Employee, Meeting, MeetingParticipant, RoomBooking, AuditLog, MeetingMinutes,
     compute_simple_embedding, cosine_similarity
 )
-from backend.app.auth import (
+from app.auth import (
     hash_password, verify_password, create_access_token,
     get_current_user, get_current_user_optional
 )
-from backend.app.init_db import init_and_seed_db
-from backend.runtime.runtime_loop import agent_runtime
-from backend.connectors.mcp_gateway import mcp_gateway
-from backend.connectors.calendar_service import get_calendar_service
-from backend.tools.registry import tool_registry
-from backend.skills.registry import skill_registry
-from backend.memory.audit_memory import audit_memory
-from backend.connectors.google_auth import consume_oauth_pkce, save_oauth_pkce, google_error_detail
-from backend.connectors import groq_client
-from backend.graph.workflow_graph import WorkflowError, resume_meeting_workflow, workflow_view, clarification_view
+from app.init_db import init_and_seed_db
+from runtime.runtime_loop import agent_runtime
+from connectors.mcp_gateway import mcp_gateway
+from connectors.calendar_service import get_calendar_service
+from tools.registry import tool_registry
+from skills.registry import skill_registry
+from memory.audit_memory import audit_memory
+from connectors.google_auth import consume_oauth_pkce, save_oauth_pkce, google_error_detail
+from connectors import groq_client
+from graph.workflow_graph import WorkflowError, resume_meeting_workflow, workflow_view, clarification_view
 from worker.worker import background_worker
-from backend.app.routes_minutes import router as minutes_router
+from app.routes_minutes import router as minutes_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("api")
@@ -158,7 +158,7 @@ def system_info():
 def _connected_google_emails() -> List[str]:
     if settings.DEMO_MODE:
         return []
-    from backend.connectors.google_auth import connected_emails
+    from connectors.google_auth import connected_emails
     return connected_emails()
 
 # ----------------- EMPLOYEE DIRECTORY -----------------
@@ -625,7 +625,7 @@ def google_calendar_callback(request: Request, db: Session = Depends(get_db)):
 def _calendar_status_payload(employee: Employee, db: Session, verify: bool) -> Dict[str, Any]:
     error = None
     if verify and employee.google_calendar_connected:
-        from backend.connectors.google_auth import load_google_credentials_with_error
+        from connectors.google_auth import load_google_credentials_with_error
         _, error = load_google_credentials_with_error(employee.email)
         db.refresh(employee)  # a revoked refresh token marks the employee disconnected
     connected = bool(employee.google_calendar_connected)
@@ -796,7 +796,7 @@ def _meeting_payload(m: Meeting, db: Session) -> Dict[str, Any]:
         data["minutes"] = {"status": minutes.status, "last_error": minutes.last_error or "",
                            "next_attempt_at": minutes.next_attempt_at.isoformat() + "Z" if minutes.next_attempt_at else None}
     if (m.mode or "").upper() == "OFFLINE":
-        from backend.agents.venue_coordinator import venue_view
+        from agents.venue_coordinator import venue_view
         data["venue_coordination"] = venue_view(data, workflow, workflow.get("organizer_email"))
     return data
 
@@ -816,18 +816,18 @@ def _execution_readiness(m: Meeting, db: Session, verify: bool) -> Dict[str, Any
     workflow = (json.loads(m.parsed_details or "{}").get("workflow") or {})
     venue_check = workflow.get("venue_check") or {}
     if (m.mode or "").upper() == "OFFLINE" and verify and m.room_name and m.scheduled_start and m.scheduled_end:
-        from backend.agents.venue_coordinator import check_venue_availability
+        from agents.venue_coordinator import check_venue_availability
         venue_check = check_venue_availability(m.room_name, m.scheduled_start, m.scheduled_end, m.id)
     if (m.mode or "").upper() == "OFFLINE" and venue_check.get("status") == "BUSY":
         return {"ready": False, "error_code": "VENUE_NOT_AVAILABLE", "venue_check": venue_check,
                 "error": f"Venue not available: {venue_check.get('reason')} Change the time or the venue before approving."}
     if settings.DEMO_MODE:
         return {"ready": True, "demo_mode": True, "google_connected": True}
-    from backend.connectors.google_auth import organizer_status
+    from connectors.google_auth import organizer_status
     attendees = [p.email for p in db.query(MeetingParticipant).filter(MeetingParticipant.meeting_id == m.id).all() if p.email]
     organizer_hint = None
     if m.organizer_id:
-        from backend.app.db import User
+        from app.db import User
         user = db.query(User).filter(User.id == m.organizer_id).first()
         if user:
             organizer_hint = user.email
@@ -995,7 +995,7 @@ def record_meeting_attendance(
 def _cancel_external_actions(m: Meeting, db: Session, reason: str) -> Dict[str, Any]:
     """Cancel what was already sent for this meeting: the Google Calendar event (Google notifies attendees)
     and any pending/confirmed venue request. Returns {"ok", "error", "done": [...]}."""
-    from backend.connectors.mcp_gateway import mcp_call
+    from connectors.mcp_gateway import mcp_call
     workflow = (json.loads(m.parsed_details or "{}").get("workflow") or {})
     organizer = workflow.get("organizer_email")
     done = []
@@ -1004,7 +1004,7 @@ def _cancel_external_actions(m: Meeting, db: Session, reason: str) -> Dict[str, 
         if not res.get("success"):
             return {"ok": False, "error": f"Google Calendar event could not be cancelled: {res.get('error')}", "details": res}
         done.append("calendar_event_cancelled" + (" (already removed in Google)" if res.get("already_removed") else ""))
-    from backend.agents.venue_coordinator import request_subject, valid_coordinator_email
+    from agents.venue_coordinator import request_subject, valid_coordinator_email
     meeting_email = ((json.loads(m.parsed_details or "{}")).get("venue_coordinator_email") or "").strip()
     for rb in db.query(RoomBooking).filter(RoomBooking.meeting_id == m.id, RoomBooking.status.in_(["PENDING", "CONFIRMED"])).all():
         # The venue coordinator received a request for this meeting: tell them it is cancelled.
@@ -1074,8 +1074,8 @@ def send_venue_request(
     Send the venue booking request e-mail, exactly as reviewed/edited by the organizer, ONLY when they click Send.
     It never sends attendee invitations and never marks the venue as confirmed: the coordinator's reply does that.
     """
-    from backend.agents.venue_coordinator import active_request, ensure_reference, valid_coordinator_email
-    from backend.connectors.mcp_gateway import mcp_call
+    from agents.venue_coordinator import active_request, ensure_reference, valid_coordinator_email
+    from connectors.mcp_gateway import mcp_call
     m = db.query(Meeting).filter(Meeting.id == id).with_for_update().first()
     if not m or m.status == "DELETED":
         raise HTTPException(status_code=404, detail="Meeting not found")
@@ -1107,7 +1107,7 @@ def send_venue_request(
 
     sender = None
     if not settings.DEMO_MODE:
-        from backend.connectors.google_auth import organizer_status
+        from connectors.google_auth import organizer_status
         attendees = [p.email for p in db.query(MeetingParticipant).filter(MeetingParticipant.meeting_id == id).all() if p.email]
         status = organizer_status(attendees, verify=True)
         if not status["ready"]:
@@ -1168,10 +1168,10 @@ def _supersede_venue_request(m: Meeting, db: Session, before) -> None:
 
 def _store_agenda_points(m: Meeting, points: List[str]) -> None:
     """The organizer's agenda points are the single source; the agenda text is just their numbered form."""
-    from backend.skills.agenda_skill import normalize_agenda_points, format_agenda
+    from skills.agenda_skill import normalize_agenda_points, format_agenda
     parsed = json.loads(m.parsed_details or "{}")
     from sqlalchemy.orm import object_session
-    from backend.app.action_items import compose_agenda
+    from app.action_items import compose_agenda
     parsed["agenda_points"] = normalize_agenda_points(points)
     m.parsed_details = json.dumps(parsed)
     # Follow-up tasks the organizer selected are appended after the organizer's own agenda, never replacing it.
@@ -1260,7 +1260,7 @@ def handle_human_approval(
         }
 
     # EDIT: apply the organizer's changes, then re-run availability/validation on the SAME meeting.
-    from backend.skills.agenda_skill import agenda_points_from_text
+    from skills.agenda_skill import agenda_points_from_text
     before = (m.scheduled_start, m.scheduled_end, (m.room_name or "").strip().lower(), (m.mode or "").upper())
     m.approval_status = "EDITED"
     edits = dict(payload.edits or {})
@@ -1383,8 +1383,8 @@ class ClarifySchema(BaseModel):
 @app.post("/api/meetings/{id}/clarify")
 def clarify_meeting(id: str, payload: ClarifySchema, db: Session = Depends(get_db)):
     """Merge the organizer's answers into the SAME meeting and re-run the workflow from participant/context checks."""
-    from backend.graph.workflow_graph import coordinator
-    from backend.agents.participant_agent import normalize_participant
+    from graph.workflow_graph import coordinator
+    from agents.participant_agent import normalize_participant
 
     m = db.query(Meeting).filter(Meeting.id == id).first()
     if not m:
@@ -1430,13 +1430,13 @@ def clarify_meeting(id: str, payload: ClarifySchema, db: Session = Depends(get_d
     if payload.venue_coordinator_email is not None:
         coordinator_email = payload.venue_coordinator_email.strip().lower()
         if (parsed.get("mode") or "").upper() == "OFFLINE":
-            from backend.agents.venue_coordinator import valid_coordinator_email
+            from agents.venue_coordinator import valid_coordinator_email
             if not valid_coordinator_email(coordinator_email):
                 errors.append("Please enter a valid venue coordinator email address.")
             else:
                 parsed["venue_coordinator_email"] = coordinator_email
     if payload.agenda_points is not None:
-        from backend.skills.agenda_skill import normalize_agenda_points
+        from skills.agenda_skill import normalize_agenda_points
         parsed["agenda_points"] = normalize_agenda_points(payload.agenda_points)
 
     if payload.attendees:
@@ -1513,7 +1513,7 @@ def clarify_meeting(id: str, payload: ClarifySchema, db: Session = Depends(get_d
     m.scheduled_end = parsed.get("end_time") or ""
     m.parsed_details = json.dumps(parsed)
     db.commit()
-    from backend.tools.registry import tool_registry
+    from tools.registry import tool_registry
     tool_registry.get("save_meeting_state").execute(meeting_id=id, participants=parsed.get("participants", []))
     audit_memory.record_event("Human Operator", "CLARIFY_DETAILS", meeting_id=id,
                               details={k: v for k, v in payload.model_dump().items() if v not in (None, "", [])})
@@ -1564,7 +1564,7 @@ def remove_unresolved_participant(id: str, payload: UnresolvedAttendeeSchema, db
     unknown, ambiguous = _unresolved_lists(m)
     parsed = json.loads(m.parsed_details or "{}")
     parsed["participants"] = [p for p in parsed.get("participants", []) if p != payload.queried_name]
-    from backend.graph.workflow_graph import coordinator
+    from graph.workflow_graph import coordinator
     m.parsed_details = json.dumps(coordinator.complete_details(parsed))
     db.commit()
     audit_memory.record_event("Human Operator", "REMOVE_UNRESOLVED_ATTENDEE", meeting_id=id, details={"queried_name": payload.queried_name})
@@ -1591,7 +1591,7 @@ def update_meeting_agenda(id: str, payload: SetAgendaSchema, db: Session = Depen
     if m.status not in {"DRAFT", "WAITING_FOR_HUMAN_APPROVAL", "RESCHEDULING_REQUIRED", "NEEDS_INFORMATION"}:
         raise HTTPException(status_code=409, detail="The agenda can only be changed before approval.")
 
-    from backend.skills.agenda_skill import agenda_points_from_text
+    from skills.agenda_skill import agenda_points_from_text
     if payload.purpose:
         m.purpose = payload.purpose
     if payload.skip:

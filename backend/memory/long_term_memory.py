@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import List, Dict, Any, Optional
-from backend.app.db import SessionLocal, Employee, Meeting, compute_simple_embedding, cosine_similarity
+from app.db import SessionLocal, Employee, Meeting, compute_simple_embedding, cosine_similarity
 
 logger = logging.getLogger("long_term_memory")
 

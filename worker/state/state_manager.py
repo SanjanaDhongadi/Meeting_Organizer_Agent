@@ -121,7 +121,7 @@ class StateManager:
     def find_conflicting_meetings(self, emails, start: str, end: str, exclude_meeting_id: Optional[str] = None,
                                   include_tentative: bool = True) -> Dict[str, list]:
         """Other meetings in this application that already hold an attendee's time (per attendee e-mail)."""
-        from backend.app.db import engine
+        from app.db import engine
         statuses = self.CONFIRMED_STATUSES + (self.TENTATIVE_STATUSES if include_tentative else ())
         with engine.connect() as conn:
             rows = self._overlap_rows(conn, emails, start, end, exclude_meeting_id, statuses)
@@ -143,7 +143,7 @@ class StateManager:
         so two concurrent approvals cannot both reserve the same attendee and time.
         """
         from sqlalchemy import text
-        from backend.app.db import engine
+        from app.db import engine
         statuses = block_statuses or (self.CONFIRMED_STATUSES + self.TENTATIVE_STATUSES)
         with _RESERVATION_LOCK:
             with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:

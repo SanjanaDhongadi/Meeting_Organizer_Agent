@@ -14,7 +14,7 @@ import pytest
 import requests
 from fastapi.testclient import TestClient
 
-from backend.app.config import settings
+from app.config import settings
 from backend.app.db import SessionLocal, Employee, Meeting, MeetingParticipant, RoomBooking, OAuthPendingState, compute_simple_embedding
 from backend.app.main import app
 from backend.connectors.mcp_gateway import mcp_gateway

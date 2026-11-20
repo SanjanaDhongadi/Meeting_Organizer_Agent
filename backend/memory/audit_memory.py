@@ -2,7 +2,7 @@ import json
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from backend.app.db import SessionLocal, AuditLog
+from app.db import SessionLocal, AuditLog
 
 logger = logging.getLogger("audit_memory")
 

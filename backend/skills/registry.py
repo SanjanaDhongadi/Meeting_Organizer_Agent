@@ -1,11 +1,11 @@
 from typing import Dict, Any, List
-from backend.skills.base import BaseSkill
-from backend.skills.scheduling_skill import MeetingSchedulingSkill
-from backend.skills.agenda_skill import AgendaPreparationSkill
-from backend.skills.validation_skill import ValidationSkill
-from backend.skills.plan_skill import PlanSkill
-from backend.skills.format_skill import FormatMeetingSkill
-from backend.skills.minutes_skill import MinutesOfMeetingSkill
+from skills.base import BaseSkill
+from skills.scheduling_skill import MeetingSchedulingSkill
+from skills.agenda_skill import AgendaPreparationSkill
+from skills.validation_skill import ValidationSkill
+from skills.plan_skill import PlanSkill
+from skills.format_skill import FormatMeetingSkill
+from skills.minutes_skill import MinutesOfMeetingSkill
 
 class SkillRegistry:
     def __init__(self):

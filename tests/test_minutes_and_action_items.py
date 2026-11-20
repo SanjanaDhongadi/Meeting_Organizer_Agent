@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from backend.agents.mom_agent import MoMAgent
 from backend.app.action_items import compose_agenda, strip_followups
-from backend.app.config import settings
+from app.config import settings
 from backend.app.db import ActionItem, Meeting, MeetingMinutes, MeetingParticipant, SessionLocal
 from backend.app.main import app
 from backend.connectors import mcp_gateway as gateway_module

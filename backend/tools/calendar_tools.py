@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from backend.tools.base import BaseTool, ToolResult
-from backend.connectors.mcp_gateway import mcp_call
+from tools.base import BaseTool, ToolResult
+from connectors.mcp_gateway import mcp_call
 import logging
 
 logger = logging.getLogger("calendar_tools")

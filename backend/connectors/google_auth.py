@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
-from backend.app.config import settings
+from app.config import settings
 
 logger = logging.getLogger("google_auth")
 
@@ -109,7 +109,7 @@ def save_oauth_pkce(
     user_id: Optional[int] = None,
     flow_type: str = "calendar"
 ) -> None:
-    from backend.app.db import SessionLocal, OAuthPendingState
+    from app.db import SessionLocal, OAuthPendingState
 
     db = SessionLocal()
     try:
@@ -136,7 +136,7 @@ def save_oauth_pkce(
 
 
 def load_oauth_pkce(state: str) -> Optional[dict]:
-    from backend.app.db import SessionLocal, OAuthPendingState
+    from app.db import SessionLocal, OAuthPendingState
 
     db = SessionLocal()
     try:
@@ -159,7 +159,7 @@ def load_oauth_pkce(state: str) -> Optional[dict]:
 
 def consume_oauth_pkce(state: str) -> Optional[dict]:
     """Load and delete the pending PKCE row in one step so a state/verifier can only be used once."""
-    from backend.app.db import SessionLocal, OAuthPendingState
+    from app.db import SessionLocal, OAuthPendingState
 
     db = SessionLocal()
     try:
@@ -183,7 +183,7 @@ def consume_oauth_pkce(state: str) -> Optional[dict]:
 
 
 def delete_oauth_pkce(state: str) -> None:
-    from backend.app.db import SessionLocal, OAuthPendingState
+    from app.db import SessionLocal, OAuthPendingState
 
     db = SessionLocal()
     try:
@@ -201,7 +201,7 @@ def mark_calendar_disconnected(employee) -> None:
 def _audit_auto_disconnect(email: str, error_code: str, reason: str) -> None:
     """Google refused the stored token, so the account was disconnected: record why (no token data)."""
     try:
-        from backend.memory.audit_memory import audit_memory
+        from memory.audit_memory import audit_memory
         audit_memory.record_event("Google Auth", "GOOGLE_ACCOUNT_DISCONNECTED", status="ERROR", error=reason,
                                   details={"employee_email": email, "error_code": error_code})
     except Exception:
@@ -219,7 +219,7 @@ def load_google_credentials_with_error(email: Optional[str] = None) -> Tuple[Opt
     from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
     from google.auth.exceptions import RefreshError
-    from backend.app.db import SessionLocal, User, Employee
+    from app.db import SessionLocal, User, Employee
 
     db = SessionLocal()
     try:
@@ -296,7 +296,7 @@ def load_google_credentials(email: Optional[str] = None):
 
 
 def connected_emails() -> List[str]:
-    from backend.app.db import SessionLocal, User, Employee
+    from app.db import SessionLocal, User, Employee
 
     db = SessionLocal()
     try:

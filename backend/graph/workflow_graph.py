@@ -8,18 +8,18 @@ import logging
 from typing import Dict, Any, List, Literal, Optional
 from langgraph.graph import StateGraph, START, END
 
-from backend.agents.venue_coordinator import active_request, check_venue_availability, local_when
-from backend.graph.state import MeetingWorkflowState
-from backend.agents.coordinator_agent import MeetingCoordinator
-from backend.tools.registry import tool_registry
-from backend.skills.scheduling_skill import availability_status
-from backend.runtime.governance import count_step, governed_run
-from backend.skills.plan_skill import PlanSkill, plan_differences
-from backend.skills.format_skill import FormatMeetingSkill
-from backend.memory.audit_memory import audit_memory
-from backend.memory.long_term_memory import long_term_memory
-from backend.memory.session_memory import session_memory
-from backend.app.config import settings
+from agents.venue_coordinator import active_request, check_venue_availability, local_when
+from graph.state import MeetingWorkflowState
+from agents.coordinator_agent import MeetingCoordinator
+from tools.registry import tool_registry
+from skills.scheduling_skill import availability_status
+from runtime.governance import count_step, governed_run
+from skills.plan_skill import PlanSkill, plan_differences
+from skills.format_skill import FormatMeetingSkill
+from memory.audit_memory import audit_memory
+from memory.long_term_memory import long_term_memory
+from memory.session_memory import session_memory
+from app.config import settings
 from worker.state.state_manager import state_manager
 
 logger = logging.getLogger("workflow_graph")
@@ -381,8 +381,8 @@ def node_find_alternative_slot(state: MeetingWorkflowState) -> MeetingWorkflowSt
             "organizer_availability": state.get("organizer_availability"), "status": "ALTERNATIVE_SLOT_SELECTED"}
 
 def _with_followups(meeting_id: str, agenda_text: str) -> str:
-    from backend.app.action_items import compose_agenda
-    from backend.app.db import SessionLocal, Meeting
+    from app.action_items import compose_agenda
+    from app.db import SessionLocal, Meeting
     db = SessionLocal()
     try:
         meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
@@ -643,10 +643,10 @@ def _needs_room_booking(venue: str) -> bool:
 def _organizer_for(state: MeetingWorkflowState, attendees: List[str]) -> Optional[str]:
     if settings.DEMO_MODE:
         return None
-    from backend.connectors.google_auth import resolve_organizer_email
+    from connectors.google_auth import resolve_organizer_email
     organizer_hint = state.get("organizer_email")
     if not organizer_hint and state.get("organizer_id"):
-        from backend.app.db import SessionLocal, User
+        from app.db import SessionLocal, User
         db = SessionLocal()
         try:
             u = db.query(User).filter(User.id == state["organizer_id"]).first()
@@ -1196,7 +1196,7 @@ def workflow_view(state: MeetingWorkflowState) -> Dict[str, Any]:
         **clarification_view(state.get("parsed_details") or (meeting.get("parsed_details") or {})),
     }
     if (meeting.get("mode") or state.get("mode") or "").upper() == "OFFLINE":
-        from backend.agents.venue_coordinator import venue_view
+        from agents.venue_coordinator import venue_view
         result["venue_coordination"] = venue_view(meeting, snapshot, snapshot.get("organizer_email"))
     return result
 

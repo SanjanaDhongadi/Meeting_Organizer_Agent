@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import logging
 import uuid
-from backend.app.config import settings
+from app.config import settings
 
 logger = logging.getLogger("calendar_service")
 
@@ -110,7 +110,7 @@ class GoogleCalendarService(CalendarService):
         self.credentials = credentials
 
     def _credentials_for(self, email: Optional[str]):
-        from backend.connectors.google_auth import load_google_credentials_with_error
+        from connectors.google_auth import load_google_credentials_with_error
         if self.credentials:
             return self.credentials, None
         return load_google_credentials_with_error(email)
@@ -122,7 +122,7 @@ class GoogleCalendarService(CalendarService):
 
     @staticmethod
     def _failure(prefix: str, error: Exception) -> Dict[str, Any]:
-        from backend.connectors.google_auth import google_error_detail
+        from connectors.google_auth import google_error_detail
         details = google_error_detail(error)
         logger.error(
             "[CalendarService] %s — HTTP %s | reason: %s | message: %s | raw: %s",
@@ -222,7 +222,7 @@ class GoogleCalendarService(CalendarService):
     def create_event(self, title: str, start_time: str, end_time: str, attendees: List[str], description: str, is_online: bool = True,
                      organizer_email: Optional[str] = None, location: str = "", event_id: Optional[str] = None,
                      send_updates: str = "all") -> Dict[str, Any]:
-        from backend.connectors.google_auth import resolve_organizer_email
+        from connectors.google_auth import resolve_organizer_email
 
         if not start_time or not end_time:
             return {"success": False, "error": "Meeting start or end time is missing. Cannot create calendar event.",

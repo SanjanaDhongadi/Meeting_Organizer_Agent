@@ -6,8 +6,8 @@ import sqlite3
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from backend.app.config import settings
-from backend.app.db import Employee, Meeting, MeetingParticipant, RoomBooking, OAuthPendingState, AuditLog
+from app.config import settings
+from app.db import Employee, Meeting, MeetingParticipant, RoomBooking, OAuthPendingState, AuditLog
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("migration")

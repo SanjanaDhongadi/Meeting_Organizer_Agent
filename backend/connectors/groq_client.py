@@ -12,7 +12,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-from backend.app.config import settings
+from app.config import settings
 
 logger = logging.getLogger("groq")
 
@@ -130,7 +130,7 @@ def chat_json(system: Optional[str], user: str, temperature: float = 0.0) -> Dic
     messages: List[Dict[str, str]] = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": user}]
 
     def once() -> Dict[str, Any]:
-        from backend.runtime.governance import count_llm_call  # lazy: governance imports LLMError from this module
+        from runtime.governance import count_llm_call  # lazy: governance imports LLMError from this module
         count_llm_call()   # budget check before every actual request (retries included); no-op outside a governed run
         response = client.chat.completions.create(
             model=settings.GROQ_LLM_MODEL, messages=messages, response_format={"type": "json_object"}, temperature=temperature)

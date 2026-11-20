@@ -1,6 +1,6 @@
 from typing import Dict, Any, List, Optional
 import re
-from backend.runtime.agent_interface import BaseAgent, AgentOutput
+from runtime.agent_interface import BaseAgent, AgentOutput
 import logging
 
 logger = logging.getLogger("participant_agent")

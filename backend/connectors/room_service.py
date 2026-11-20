@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 import logging
 import uuid
-from backend.app.config import settings
+from app.config import settings
 
 logger = logging.getLogger("room_service")
 
@@ -85,8 +85,8 @@ class RealRoomService(RoomService):
 
     def request_booking(self, room_name: str, start_time: str, end_time: str, capacity: int, equipment: str, meeting_id: str,
                         **details: Any) -> Dict[str, Any]:
-        from backend.agents.venue_coordinator import valid_coordinator_email
-        from backend.connectors.email_service import get_email_service
+        from agents.venue_coordinator import valid_coordinator_email
+        from connectors.email_service import get_email_service
         from worker.state.state_manager import state_manager
 
         coordinator_email = (details.get("coordinator_email") or "").strip()
@@ -160,7 +160,7 @@ class RealRoomService(RoomService):
         }
 
     def check_room_status(self, booking_id: str) -> Dict[str, Any]:
-        from backend.app.db import SessionLocal, RoomBooking
+        from app.db import SessionLocal, RoomBooking
         db = SessionLocal()
         try:
             booking = db.query(RoomBooking).filter(RoomBooking.notes.contains(booking_id)).first()

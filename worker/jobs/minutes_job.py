@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import or_
 
-from backend.app.config import settings
+from app.config import settings
 from backend.app.db import ActionItem, Meeting, MeetingMinutes, MeetingParticipant, RecordingSegment, SessionLocal, User
 from backend.app import recordings
 from backend.connectors.meet_service import meeting_code_from_url
@@ -451,7 +451,7 @@ class MinutesJob:
                 return {"success": False, "code": 409, "error": "There are no participants to send the minutes to."}
             sender = None
             if not settings.DEMO_MODE:
-                from backend.connectors.google_auth import organizer_status
+                from connectors.google_auth import organizer_status
                 organizer = db.query(User).filter(User.id == m.organizer_id).first()
                 status = organizer_status(recipients, organizer_hint=organizer.email if organizer else None, verify=True)
                 if not status["ready"]:

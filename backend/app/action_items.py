@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from sqlalchemy.orm import Session
 
-from backend.app.db import ActionItem, Meeting, MeetingParticipant
+from app.db import ActionItem, Meeting, MeetingParticipant
 
 STATUSES = ("NOT_STARTED", "IN_PROGRESS", "COMPLETED")
 FOLLOWUP_HEADER = "Follow-up on open action items:"

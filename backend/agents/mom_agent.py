@@ -8,10 +8,10 @@ LLM boundary (`_complete`) and the error handling.
 import logging
 from typing import Any, Dict, List, Optional
 
-from backend.app.config import settings
-from backend.connectors import groq_client
-from backend.runtime.agent_interface import AgentOutput, BaseAgent
-from backend.skills.minutes_skill import (  # names kept for existing importers
+from app.config import settings
+from connectors import groq_client
+from runtime.agent_interface import AgentOutput, BaseAgent
+from skills.minutes_skill import (  # names kept for existing importers
     CHUNK_CHARS, SYSTEM_PROMPT, MinutesOfMeetingSkill, ground, match_participant, norm as _norm,
     split_transcript as _split_transcript,
 )

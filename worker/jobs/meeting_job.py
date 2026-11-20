@@ -84,10 +84,10 @@ class MeetingJob:
         for the worker that still sees the stale value), so two workers never resume the same meeting. The resumed
         run skips the external steps already checkpointed in parsed_details["workflow"]["execution_steps"].
         """
-        from backend.app.config import settings
-        from backend.app.db import Meeting, SessionLocal
-        from backend.graph.workflow_graph import WorkflowError, resume_meeting_workflow
-        from backend.memory.audit_memory import audit_memory
+        from app.config import settings
+        from app.db import Meeting, SessionLocal
+        from graph.workflow_graph import WorkflowError, resume_meeting_workflow
+        from memory.audit_memory import audit_memory
 
         cutoff = datetime.utcnow() - timedelta(minutes=settings.EXECUTION_STUCK_MINUTES)
         db = SessionLocal()

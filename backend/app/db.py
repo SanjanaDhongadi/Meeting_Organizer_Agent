@@ -8,7 +8,7 @@ from sqlalchemy import (
     create_engine, Column, Integer, Float, String, Text, Boolean, DateTime, ForeignKey, Index, UniqueConstraint, func
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from backend.app.config import settings
+from app.config import settings
 
 logger = logging.getLogger("db")
 

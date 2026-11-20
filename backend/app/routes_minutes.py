@@ -12,13 +12,13 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from backend.app.action_items import STATUSES, compose_agenda, suggest_followups, unfinished_items_query, valid_due_date
-from backend.app.auth import get_current_user
-from backend.app.config import settings
-from backend.app import recordings
-from backend.connectors import groq_client
-from backend.app.db import ActionItem, Meeting, MeetingMinutes, MeetingParticipant, RecordingSegment, User, get_db
-from backend.memory.audit_memory import audit_memory
+from app.action_items import STATUSES, compose_agenda, suggest_followups, unfinished_items_query, valid_due_date
+from app.auth import get_current_user
+from app.config import settings
+from app import recordings
+from connectors import groq_client
+from app.db import ActionItem, Meeting, MeetingMinutes, MeetingParticipant, RecordingSegment, User, get_db
+from memory.audit_memory import audit_memory
 from worker.jobs.minutes_job import has_ended, is_minutes_eligible
 from worker.state.state_manager import state_manager
 from worker.worker import background_worker
@@ -80,7 +80,7 @@ def check_transcript(id: str, background: BackgroundTasks, db: Session = Depends
     result = job.retrieve(id, force=True)
     if result.get("status") == "TRANSCRIPT_RETRIEVED":
         if job.claim_generation(id):
-            from backend.graph.mom_graph import run_mom_generation
+            from graph.mom_graph import run_mom_generation
             background.add_task(run_mom_generation, id)
     db.expire_all()
     return {**result, **{k: v for k, v in _minutes_view(db, m).items() if k in ("status", "minutes")}}
@@ -91,7 +91,7 @@ def regenerate_minutes(id: str, background: BackgroundTasks, db: Session = Depen
     m = _organizer_meeting(db, id, user)
     if not job.claim_generation(id, regenerate=True):
         raise HTTPException(status_code=409, detail="The minutes cannot be regenerated in their current state.")
-    from backend.graph.mom_graph import run_mom_generation
+    from graph.mom_graph import run_mom_generation
     background.add_task(run_mom_generation, id)
     return {"status": "GENERATING_MOM", "meeting_id": m.id}
 
@@ -353,7 +353,7 @@ def start_recording(id: str, payload: RecordingStartIn, background: BackgroundTa
         native = job.retrieve(id, force=True)         # one last look for Google's own transcript
         if native.get("status") == "TRANSCRIPT_RETRIEVED":
             if job.claim_generation(id):
-                from backend.graph.mom_graph import run_mom_generation
+                from graph.mom_graph import run_mom_generation
                 background.add_task(run_mom_generation, id)
             return {"status": "TRANSCRIPT_RETRIEVED", "native_transcript": True,
                     "message": "Google already provided a transcript for this meeting, so it is being used instead of a recording."}

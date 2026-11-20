@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.app.config import settings
-from backend.skills.base import BaseSkill, SkillMetadata
+from app.config import settings
+from skills.base import BaseSkill, SkillMetadata
 
 
 class PlanParticipant(BaseModel):

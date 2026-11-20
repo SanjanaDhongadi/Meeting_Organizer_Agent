@@ -2,9 +2,9 @@ import re
 import json
 import logging
 from typing import Dict, Any, List, Tuple
-from backend.skills.base import BaseSkill, SkillMetadata
-from backend.app.config import settings
-from backend.connectors import groq_client
+from skills.base import BaseSkill, SkillMetadata
+from app.config import settings
+from connectors import groq_client
 
 logger = logging.getLogger("agenda_skill")
 

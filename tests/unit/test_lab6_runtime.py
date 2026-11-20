@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from backend.app.config import settings
+from app.config import settings
 from backend.app.db import Meeting, MeetingParticipant, SessionLocal
 from backend.connectors import email_service, groq_client
 from backend.graph.workflow_graph import clear_execution_steps, coordinator, start_meeting_workflow

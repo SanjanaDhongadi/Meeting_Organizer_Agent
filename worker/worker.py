@@ -82,7 +82,7 @@ class BackgroundWorker:
         and the venue coordinator's reply to a venue request from Gmail (gmail.read). Each becomes an event with a
         non-simulated source. What Google reported is stored so the UI can show it.
         """
-        from backend.app.config import settings
+        from app.config import settings
         from backend.app.db import SessionLocal, Meeting
         from backend.connectors.mcp_gateway import mcp_call
         from backend.agents.venue_coordinator import active_request, valid_coordinator_email

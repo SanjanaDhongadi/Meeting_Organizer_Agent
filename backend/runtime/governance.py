@@ -15,8 +15,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, Optional
 
-from backend.app.config import settings
-from backend.connectors.groq_client import LLMError
+from app.config import settings
+from connectors.groq_client import LLMError
 
 logger = logging.getLogger("governance")
 
@@ -99,7 +99,7 @@ def check_time() -> None:
 def _record(run: _Run, error: Optional[BaseException]) -> None:
     """Exactly one audit event per run. A failure to write it must never hide the run's own exception."""
     try:
-        from backend.memory.audit_memory import audit_memory
+        from memory.audit_memory import audit_memory
         if error is not None and not run.exceeded and type(error).__name__ == "GraphRecursionError":
             run.exceeded = "steps"
         details: Dict[str, Any] = {

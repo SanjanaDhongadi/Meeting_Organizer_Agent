@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
-from backend.app.config import settings
+from app.config import settings
 
 
 # Statuses of a venue request row (room_bookings). SUPERSEDED/CANCELLED rows are history only.
@@ -84,7 +84,7 @@ def venue_conflicts_in_app(venue: str, start: str, end: str, exclude_meeting_id:
     if not venue or not start or not end:
         return []
     from sqlalchemy import text, bindparam
-    from backend.app.db import engine
+    from app.db import engine
     query = text(
         "SELECT id, title, status, scheduled_start, scheduled_end FROM meetings "
         "WHERE lower(trim(room_name)) = :venue AND upper(mode) = 'OFFLINE' AND status IN :statuses "

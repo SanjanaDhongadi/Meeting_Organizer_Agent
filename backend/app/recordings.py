@@ -8,8 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from backend.app.config import settings
-from backend.app.db import RecordingSegment
+from app.config import settings
+from app.db import RecordingSegment
 
 logger = logging.getLogger("recordings")
 

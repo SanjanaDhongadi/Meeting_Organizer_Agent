@@ -1,10 +1,10 @@
 from typing import Dict, Any, Optional
 import logging
 from pydantic import BaseModel, Field
-from backend.connectors.calendar_service import get_calendar_service
-from backend.connectors.email_service import get_email_service
-from backend.connectors.room_service import get_room_service
-from backend.connectors.meet_service import get_meet_service
+from connectors.calendar_service import get_calendar_service
+from connectors.email_service import get_email_service
+from connectors.room_service import get_room_service
+from connectors.meet_service import get_meet_service
 
 logger = logging.getLogger("mcp_gateway")
 
@@ -108,7 +108,7 @@ class MCPGateway:
 
     def _authorize_external(self, method: str, params: Dict[str, Any], ctx: Dict[str, Any]):
         """Caller-scoped authorization for HTTP callers. Returns (params, denial); denial is None if allowed."""
-        from backend.app.db import SessionLocal, Meeting, MeetingParticipant
+        from app.db import SessionLocal, Meeting, MeetingParticipant
         params = dict(params)
         me = (ctx.get("user_email") or "").strip().lower()
 
@@ -163,7 +163,7 @@ class MCPGateway:
         result = response.result if isinstance(response.result, dict) else {}
         failed = bool(response.error) or result.get("success") is False
         try:
-            from backend.memory.audit_memory import audit_memory
+            from memory.audit_memory import audit_memory
             audit_memory.record_event("MCP Gateway", "EXTERNAL_MCP_CALL", meeting_id=(params or {}).get("meeting_id"),
                                       status="ERROR" if failed else "SUCCESS",
                                       details={"method": method, "user_id": ctx.get("user_id")})

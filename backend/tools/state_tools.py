@@ -2,8 +2,8 @@ import json
 from typing import Dict, Any, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
-from backend.tools.base import BaseTool, ToolResult
-from backend.app.db import SessionLocal, Meeting, MeetingParticipant, AuditLog
+from tools.base import BaseTool, ToolResult
+from app.db import SessionLocal, Meeting, MeetingParticipant, AuditLog
 import logging
 
 logger = logging.getLogger("state_tools")

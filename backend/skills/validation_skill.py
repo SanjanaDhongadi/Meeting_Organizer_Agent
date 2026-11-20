@@ -1,6 +1,6 @@
 import re
 from typing import Dict, Any, List
-from backend.skills.base import BaseSkill, SkillMetadata
+from skills.base import BaseSkill, SkillMetadata
 import logging
 
 logger = logging.getLogger("validation_skill")

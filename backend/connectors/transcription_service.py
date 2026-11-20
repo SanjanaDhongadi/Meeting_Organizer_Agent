@@ -8,8 +8,8 @@ import logging
 import os
 from typing import Any, Dict, List
 
-from backend.app.config import settings
-from backend.connectors import groq_client
+from app.config import settings
+from connectors import groq_client
 
 logger = logging.getLogger("transcription")
 

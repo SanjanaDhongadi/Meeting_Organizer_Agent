@@ -1,7 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from backend.tools.base import BaseTool, ToolResult
-from backend.app.db import SessionLocal, Employee, compute_simple_embedding, cosine_similarity
+from tools.base import BaseTool, ToolResult
+from app.db import SessionLocal, Employee, compute_simple_embedding, cosine_similarity
 import json
 import logging
 
@@ -138,7 +138,7 @@ class RetrieveParticipantProfileTool(BaseTool):
                 (Employee.employee_id == ident) | (Employee.email.ilike(ident))
             ).first()
             if not emp:
-                from backend.app.db import User
+                from app.db import User
                 usr = db.query(User).filter(User.email.ilike(ident)).first()
                 if usr:
                     return ToolResult(

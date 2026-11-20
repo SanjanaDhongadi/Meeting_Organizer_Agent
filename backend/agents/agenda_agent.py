@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
-from backend.runtime.agent_interface import BaseAgent, AgentOutput
-from backend.skills.agenda_skill import AgendaPreparationSkill
+from runtime.agent_interface import BaseAgent, AgentOutput
+from skills.agenda_skill import AgendaPreparationSkill
 import logging
 
 logger = logging.getLogger("agenda_agent")

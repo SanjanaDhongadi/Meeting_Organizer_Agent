@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from backend.skills.base import BaseSkill, SkillMetadata
+from skills.base import BaseSkill, SkillMetadata
 
 
 class InviteResult(BaseModel):

@@ -23,7 +23,7 @@ class ResponseProcessingJob:
     """
 
     def _resume(self, meeting_id: str, event: Dict[str, Any]) -> Dict[str, Any]:
-        from backend.graph.workflow_graph import WorkflowError, resume_meeting_workflow
+        from graph.workflow_graph import WorkflowError, resume_meeting_workflow
         try:
             final_state = resume_meeting_workflow(meeting_id, "RESPONSE", response_event=event)
         except WorkflowError as error:

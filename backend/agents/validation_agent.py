@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
-from backend.runtime.agent_interface import BaseAgent, AgentOutput
-from backend.skills.validation_skill import ValidationSkill
+from runtime.agent_interface import BaseAgent, AgentOutput
+from skills.validation_skill import ValidationSkill
 import logging
 
 logger = logging.getLogger("validation_agent")

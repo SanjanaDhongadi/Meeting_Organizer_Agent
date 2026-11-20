@@ -1,8 +1,8 @@
 from typing import Dict, Any, List
 from datetime import datetime, timedelta, time
 from zoneinfo import ZoneInfo
-from backend.skills.base import BaseSkill, SkillMetadata
-from backend.tools.calendar_tools import CheckCalendarAvailabilityTool, FindCommonSlotsTool
+from skills.base import BaseSkill, SkillMetadata
+from tools.calendar_tools import CheckCalendarAvailabilityTool, FindCommonSlotsTool
 import logging
 
 logger = logging.getLogger("scheduling_skill")
@@ -130,7 +130,7 @@ class MeetingSchedulingSkill(BaseSkill):
 
     @staticmethod
     def local_range(start: str, end: str) -> str:
-        from backend.app.config import settings
+        from app.config import settings
         try:
             tz = ZoneInfo(settings.MEETING_TIMEZONE)
         except Exception:

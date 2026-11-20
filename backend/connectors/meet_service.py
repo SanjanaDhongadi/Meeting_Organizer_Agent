@@ -11,7 +11,7 @@ import re
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from backend.app.config import settings
+from app.config import settings
 
 logger = logging.getLogger("meet_service")
 
@@ -48,7 +48,7 @@ class GoogleMeetService(MeetService):
         self.credentials = credentials
 
     def _credentials_for(self, email: Optional[str]):
-        from backend.connectors.google_auth import load_google_credentials_with_error
+        from connectors.google_auth import load_google_credentials_with_error
         if self.credentials:
             return self.credentials, None
         return load_google_credentials_with_error(email)
@@ -60,7 +60,7 @@ class GoogleMeetService(MeetService):
 
     @staticmethod
     def _failure(prefix: str, error: Exception) -> Dict[str, Any]:
-        from backend.connectors.google_auth import google_error_detail
+        from connectors.google_auth import google_error_detail
         details = google_error_detail(error)
         logger.error("[MeetService] %s — HTTP %s | %s", prefix, details["http_status"], details["error_detail"])
         code = "NETWORK_UNREACHABLE" if details.get("network_error") else "GOOGLE_API_FAILURE"

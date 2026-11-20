@@ -1,15 +1,15 @@
 from typing import Dict, Any, List
-from backend.tools.base import BaseTool
-from backend.tools.participant_tools import FindParticipantTool, RetrieveParticipantProfileTool
-from backend.tools.calendar_tools import (
+from tools.base import BaseTool
+from tools.participant_tools import FindParticipantTool, RetrieveParticipantProfileTool
+from tools.calendar_tools import (
     CheckCalendarAvailabilityTool,
     FindCommonSlotsTool,
     CreateCalendarEventTool,
     CreateGoogleMeetTool
 )
-from backend.tools.communication_tools import SendEmailTool
-from backend.tools.room_tools import RequestRoomBookingTool, CheckRoomStatusTool
-from backend.tools.state_tools import SaveMeetingStateTool, LoadMeetingStateTool, CreateAuditLogTool
+from tools.communication_tools import SendEmailTool
+from tools.room_tools import RequestRoomBookingTool, CheckRoomStatusTool
+from tools.state_tools import SaveMeetingStateTool, LoadMeetingStateTool, CreateAuditLogTool
 
 class ToolRegistry:
     def __init__(self):

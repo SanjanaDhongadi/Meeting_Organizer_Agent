@@ -42,3 +42,4 @@ alembic>=1.13.0
 
 # Tests
 pytest>=8.0.0
+psycopg[binary]

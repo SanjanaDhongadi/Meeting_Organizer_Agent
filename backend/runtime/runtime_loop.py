@@ -1,14 +1,14 @@
 import uuid
 import logging
 from typing import Dict, Any, Optional, List
-from backend.runtime.agent_interface import BaseAgent, AgentOutput
-from backend.skills.registry import skill_registry
-from backend.tools.registry import tool_registry
-from backend.memory.session_memory import session_memory
-from backend.memory.long_term_memory import long_term_memory
-from backend.memory.audit_memory import audit_memory
-from backend.agents.coordinator_agent import MeetingCoordinator
-from backend.runtime.governance import RunBudget, governed_run
+from runtime.agent_interface import BaseAgent, AgentOutput
+from skills.registry import skill_registry
+from tools.registry import tool_registry
+from memory.session_memory import session_memory
+from memory.long_term_memory import long_term_memory
+from memory.audit_memory import audit_memory
+from agents.coordinator_agent import MeetingCoordinator
+from runtime.governance import RunBudget, governed_run
 
 logger = logging.getLogger("agent_runtime")
 
@@ -46,7 +46,7 @@ class AgentRuntime:
         -> agenda -> resource -> validate/critique/conflicts -> draft plan -> human approval gate (pauses).
         Approval, edits and asynchronous responses later resume the SAME persisted meeting in the same graph.
         """
-        from backend.graph.workflow_graph import start_meeting_workflow, workflow_view
+        from graph.workflow_graph import start_meeting_workflow, workflow_view
 
         meeting_id = session_id or f"meet-{uuid.uuid4().hex[:10]}"
         logger.info(f"[Runtime] Running LangGraph workflow for meeting {meeting_id}: '{raw_request}'")

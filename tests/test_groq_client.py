@@ -6,7 +6,7 @@ import pytest
 
 from backend.agents.coordinator_agent import MeetingCoordinator
 from backend.agents.mom_agent import MoMAgent, MoMUnavailable
-from backend.app.config import settings
+from app.config import settings
 from backend.connectors import groq_client
 from backend.connectors.groq_client import LLMError
 from backend.connectors.transcription_service import TranscriptionService

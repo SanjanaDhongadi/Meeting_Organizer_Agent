@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
-from backend.runtime.agent_interface import BaseAgent, AgentOutput
-from backend.skills.scheduling_skill import MeetingSchedulingSkill
+from runtime.agent_interface import BaseAgent, AgentOutput
+from skills.scheduling_skill import MeetingSchedulingSkill
 import logging
 
 logger = logging.getLogger("scheduling_agent")

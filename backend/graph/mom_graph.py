@@ -11,10 +11,10 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
-from backend.agents.mom_agent import mom_agent
-from backend.app.db import ActionItem, Meeting, MeetingMinutes, MeetingParticipant, SessionLocal
-from backend.memory.audit_memory import audit_memory
-from backend.runtime.governance import governed_run
+from agents.mom_agent import mom_agent
+from app.db import ActionItem, Meeting, MeetingMinutes, MeetingParticipant, SessionLocal
+from memory.audit_memory import audit_memory
+from runtime.governance import governed_run
 
 logger = logging.getLogger("mom_graph")
 

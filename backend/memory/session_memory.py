@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 import json
 import logging
-from backend.app.db import SessionLocal, Meeting
+from app.db import SessionLocal, Meeting
 
 logger = logging.getLogger("session_memory")
 

@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional
-from backend.runtime.agent_interface import BaseAgent, AgentOutput
+from runtime.agent_interface import BaseAgent, AgentOutput
 from database.seed.seed_data import SEED_ROOMS
 import logging
 

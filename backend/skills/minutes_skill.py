@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.skills.base import BaseSkill, SkillMetadata
+from skills.base import BaseSkill, SkillMetadata
 
 CHUNK_CHARS = 60000
 

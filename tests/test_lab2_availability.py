@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.config import settings
+from app.config import settings
 from backend.app.db import Employee, SessionLocal, User
 from backend.app.main import app
 from backend.graph.workflow_graph import node_check_availability
